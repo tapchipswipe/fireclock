@@ -7,11 +7,13 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : Activity() {
     private lateinit var webView: WebView
     private var serverStarted = false
+    private var loadAttempts = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,7 +33,18 @@ class MainActivity : Activity() {
             setAllowFileAccess(false)
             setAllowContentAccess(false)
         }
-        webView.webViewClient = WebViewClient()
+        webView.webViewClient = object : WebViewClient() {
+            override fun onReceivedError(
+                view: WebView,
+                request: android.webkit.WebResourceRequest,
+                error: android.webkit.WebResourceError
+            ) {
+                if (request.isForMainFrame && loadAttempts < 5) {
+                    loadAttempts++
+                    view.postDelayed({ view.loadUrl("http://localhost:8080/") }, 500)
+                }
+            }
+        }
         webView.loadUrl("http://localhost:8080/")
 
         window.decorView.systemUiVisibility = (
@@ -43,6 +56,7 @@ class MainActivity : Activity() {
         setContentView(webView)
 
         CoroutineScope(Dispatchers.Main).launch {
+            delay(2000)
             AppUpdater.checkForUpdate(this@MainActivity)
         }
     }
