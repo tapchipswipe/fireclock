@@ -143,7 +143,7 @@ object EmbeddedServer {
             val stream = if (code in 200..299) conn.inputStream else conn.errorStream
             corsResponse(Status.OK, stream, "application/json")
         } catch (e: Exception) {
-            corsResponse(Status.BAD_GATEWAY)
+            corsResponse(Status.INTERNAL_ERROR)
         }
     }
 
@@ -162,19 +162,19 @@ object EmbeddedServer {
             val stream = conn.inputStream
             corsResponse(Status.OK, stream, "text/calendar")
         } catch (e: Exception) {
-            corsResponse(Status.BAD_GATEWAY)
+            corsResponse(Status.INTERNAL_ERROR)
         }
     }
 
     private fun corsResponse(status: IStatus, body: String = ""): Response {
-        return Response.newFixedLengthResponse(status, "text/plain", body, body.length.toLong())
+        return NanoHTTPD.newFixedLengthResponse(status, "text/plain", body, body.length.toLong())
             .addHeader("Access-Control-Allow-Origin", "*")
             .addHeader("Access-Control-Allow-Methods", "GET, PUT, OPTIONS")
             .addHeader("Access-Control-Allow-Headers", "Content-Type")
     }
 
     private fun corsResponse(status: IStatus, input: InputStream, mime: String): Response {
-        return Response.newChunkedResponse(status, mime, input)
+        return NanoHTTPD.newChunkedResponse(status, mime, input)
             .addHeader("Access-Control-Allow-Origin", "*")
             .addHeader("Access-Control-Allow-Methods", "GET, PUT, OPTIONS")
             .addHeader("Access-Control-Allow-Headers", "Content-Type")
