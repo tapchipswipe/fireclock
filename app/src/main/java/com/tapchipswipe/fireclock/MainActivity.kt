@@ -5,6 +5,9 @@ import android.os.Bundle
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : Activity() {
     private lateinit var webView: WebView
@@ -38,6 +41,10 @@ class MainActivity : Activity() {
         )
 
         setContentView(webView)
+
+        CoroutineScope(Dispatchers.Main).launch {
+            AppUpdater.checkForUpdate(this@MainActivity)
+        }
     }
 
     override fun onDestroy() {
