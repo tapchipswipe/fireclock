@@ -90,6 +90,9 @@ object EmbeddedServer {
         val path = if (uri == "/") "/index.html" else uri
         val file = File(rootDir, path)
         if (!file.exists() || !file.isFile) {
+            if (uri == "/") {
+                return fallbackResponse()
+            }
             return corsResponse(Status.NOT_FOUND)
         }
         return try {
@@ -98,6 +101,11 @@ object EmbeddedServer {
         } catch (e: Exception) {
             corsResponse(Status.INTERNAL_ERROR)
         }
+    }
+
+    private fun fallbackResponse(): Response {
+        val html = "<html><body><h1>FireClock</h1><p>Server is running, but index.html is missing.</p></body></html>"
+        return corsResponse(Status.OK, html.byteInputStream(), "text/html")
     }
 
     private fun handleApiGet(): Response {
