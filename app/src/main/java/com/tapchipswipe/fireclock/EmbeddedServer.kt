@@ -2,11 +2,12 @@ package com.tapchipswipe.fireclock
 
 import android.content.Context
 import android.util.Log
-import org.nanohttpd.protocols.http.IHTTPSession
-import org.nanohttpd.protocols.http.NanoHTTPD
-import org.nanohttpd.protocols.http.response.IStatus
-import org.nanohttpd.protocols.http.response.Response
-import org.nanohttpd.protocols.http.response.Status
+import fi.iki.elonen.NanoHTTPD
+import fi.iki.elonen.NanoHTTPD.IHTTPSession
+import fi.iki.elonen.NanoHTTPD.Method
+import fi.iki.elonen.NanoHTTPD.Response
+import fi.iki.elonen.NanoHTTPD.Response.IStatus
+import fi.iki.elonen.NanoHTTPD.Response.Status
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
@@ -59,14 +60,14 @@ object EmbeddedServer {
 
     private fun handle(session: IHTTPSession): Response {
         val uri = session.uri ?: "/"
-        val method = session.method ?: NanoHTTPD.Method.GET
+        val method = session.method ?: Method.GET
 
         return when {
-            method == NanoHTTPD.Method.OPTIONS -> corsResponse(Status.OK)
+            method == Method.OPTIONS -> corsResponse(Status.OK)
             uri == "/api/" || uri.startsWith("/api") -> {
                 when (method) {
-                    NanoHTTPD.Method.GET -> handleApiGet()
-                    NanoHTTPD.Method.PUT -> handleApiPut(session)
+                    Method.GET -> handleApiGet()
+                    Method.PUT -> handleApiPut(session)
                     else -> corsResponse(Status.METHOD_NOT_ALLOWED)
                 }
             }
