@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -26,6 +27,10 @@ class MainActivity : Activity() {
         }
 
         webView = WebView(this)
+        webView.layoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        )
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -41,11 +46,18 @@ class MainActivity : Activity() {
             ) {
                 if (request.isForMainFrame && loadAttempts < 5) {
                     loadAttempts++
-                    view.postDelayed({ view.loadUrl("http://localhost:8080/") }, 500)
+                    view.postDelayed({ view.loadUrl("http://localhost:8080/") }, 600)
                 }
             }
         }
-        webView.loadUrl("http://localhost:8080/")
+
+        val container = FrameLayout(this)
+        container.layoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        )
+        container.addView(webView)
+        setContentView(container)
 
         window.decorView.systemUiVisibility = (
             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -53,10 +65,11 @@ class MainActivity : Activity() {
             or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
         )
 
-        setContentView(webView)
-
         CoroutineScope(Dispatchers.Main).launch {
-            delay(2000)
+            delay(800)
+            if (loadAttempts == 0) {
+                webView.loadUrl("http://localhost:8080/")
+            }
             AppUpdater.checkForUpdate(this@MainActivity)
         }
     }
