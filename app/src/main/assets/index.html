@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FireClock — Fire TV Clock &amp; Schedule</title>
+
+  <!-- ical.js from CDN (pinned version) for .ics parsing, with cdnjs fallback -->
+  <script src="https://unpkg.com/ical.js@1.5.0/build/ical.js"
+          onerror="if(!window.ICAL){var s=document.createElement('script');
+                   s.src='https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.js';
+                   document.head.appendChild(s);}"></script>
+
+  <!-- Premium type: Plus Jakarta Sans (display) + Space Grotesk (numerals/mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Full-screen glass reflection + film-grain overlays (pointer-events: none) -->
+  <div class="screen" id="screen">
+  <div class="glare" aria-hidden="true"></div>
+  <div class="noise" aria-hidden="true"></div>
+
+  <main class="stage">
+    <!-- Slim clock band: date (left) + clock (right) -->
+    <header class="clock" aria-label="Clock">
+      <div class="date" id="clock-date">&nbsp;</div>
+      <div class="time" id="clock-time" aria-live="off">
+        <span class="digits" id="clock-digits">00:00</span><span class="digits" id="clock-sep">:</span><span class="digits seconds" id="clock-seconds">00</span><span class="ampm" id="ampm">--</span>
+      </div>
+    </header>
+
+    <!-- Next-up line under the clock (idea 9) -->
+    <div class="nextup" id="nextup">&nbsp;</div>
+
+    <!-- Calendar — the hero -->
+    <section class="calendar" aria-label="Schedule">
+      <div class="calendar-wrap">
+        <div class="calendar-list" id="events">
+          <div class="event-list-status">Loading schedule…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom stripe: milestone dates (left) + weather (right) -->
+    <footer class="watchbar">
+      <div class="watchbar-left">
+        <div class="milestones" id="milestones">&nbsp;</div>
+        <button class="gear" id="gear" title="Settings" aria-label="Settings">⚙</button>
+      </div>
+      <div class="weather" id="weather">&nbsp;</div>
+    </footer>
+  </main>
+  </div>
+
+  <!-- Faint idle screensaver clock (idea 17) -->
+  <div class="faintclock" id="faintclock">&nbsp;</div>
+
+  <!-- Settings editor overlay -->
+  <div class="settings" id="settings" hidden></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

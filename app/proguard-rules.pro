@@ -1,0 +1,3 @@
+-keep class com.tapchipswipe.fireclock.** { *; }
+-keep class org.nanohttpd.** { *; }
+-dontwarn org.nanohttpd.**

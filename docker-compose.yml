@@ -1,0 +1,15 @@
+services:
+  fireclock:
+    build: .
+    container_name: fireclock
+    image: fireclock:latest
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    # Static content is immutable, so nothing needs to be writable in-container.
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /run
+    security_opt:
+      - no-new-privileges:true
