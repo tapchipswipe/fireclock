@@ -31,11 +31,35 @@ jobs:
       - name: Build release APK
         run: gradle assembleRelease
 
+      - name: Generate signing keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore release.jks \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias fireclock \
+            -storepass android -keypass android \
+            -dname "CN=FireClock, OU=Dev, O=TapChipSwipe, L=Manchester, S=NH, C=US"
+
+      - name: Sign APK
+        run: |
+          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+            --ks release.jks \
+            --ks-key-alias fireclock \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out app/build/outputs/apk/release/app-release-signed.apk \
+            app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Verify signed APK
+        run: |
+          $ANDROID_HOME/build-tools/34.0.0/apksigner verify \
+            --verbose app/build/outputs/apk/release/app-release-signed.apk
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: fireclock-apk
-          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          path: app/build/outputs/apk/release/app-release-signed.apk
 
       - name: Create GitHub Release
         if: github.ref == 'refs/heads/main'
@@ -43,7 +67,7 @@ jobs:
         with:
           tag_name: latest
           name: FireClock Latest
-          files: app/build/outputs/apk/release/app-release-unsigned.apk
+          files: app/build/outputs/apk/release/app-release-signed.apk
           prerelease: false
           generate_release_notes: true
         env:
