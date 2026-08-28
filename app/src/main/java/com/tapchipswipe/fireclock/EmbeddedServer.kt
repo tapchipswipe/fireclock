@@ -37,7 +37,12 @@ object EmbeddedServer {
         userFile = File(rootDir, "user.json")
         server = object : NanoHTTPD(PORT) {
             override fun serve(session: IHTTPSession): Response {
-                return handle(session)
+                return try {
+                    handle(session)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Serve error", e)
+                    corsResponse(Status.INTERNAL_ERROR)
+                }
             }
         }
         try {

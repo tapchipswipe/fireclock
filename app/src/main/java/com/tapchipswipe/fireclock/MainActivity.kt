@@ -2,6 +2,7 @@ package com.tapchipswipe.fireclock
 
 import android.app.Activity
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -44,6 +45,7 @@ class MainActivity : Activity() {
                 request: android.webkit.WebResourceRequest,
                 error: android.webkit.WebResourceError
             ) {
+                Log.w("MainActivity", "WebView error: ${error.description}")
                 if (request.isForMainFrame && loadAttempts < 5) {
                     loadAttempts++
                     view.postDelayed({ view.loadUrl("http://localhost:8080/") }, 600)
