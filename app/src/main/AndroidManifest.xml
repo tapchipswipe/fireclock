@@ -11,7 +11,8 @@
         android:label="FireClock"
         android:icon="@mipmap/ic_launcher"
         android:banner="@drawable/banner"
-        android:theme="@style/Theme.FireClock">
+        android:theme="@style/Theme.FireClock"
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name=".MainActivity"
