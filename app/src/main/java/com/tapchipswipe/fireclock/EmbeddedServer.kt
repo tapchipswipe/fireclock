@@ -167,17 +167,19 @@ object EmbeddedServer {
     }
 
     private fun corsResponse(status: IStatus, body: String = ""): Response {
-        return NanoHTTPD.newFixedLengthResponse(status, "text/plain", body, body.length.toLong())
-            .addHeader("Access-Control-Allow-Origin", "*")
-            .addHeader("Access-Control-Allow-Methods", "GET, PUT, OPTIONS")
-            .addHeader("Access-Control-Allow-Headers", "Content-Type")
+        val r = NanoHTTPD.newFixedLengthResponse(status, "text/plain", body)
+        r.addHeader("Access-Control-Allow-Origin", "*")
+        r.addHeader("Access-Control-Allow-Methods", "GET, PUT, OPTIONS")
+        r.addHeader("Access-Control-Allow-Headers", "Content-Type")
+        return r
     }
 
     private fun corsResponse(status: IStatus, input: InputStream, mime: String): Response {
-        return NanoHTTPD.newChunkedResponse(status, mime, input)
-            .addHeader("Access-Control-Allow-Origin", "*")
-            .addHeader("Access-Control-Allow-Methods", "GET, PUT, OPTIONS")
-            .addHeader("Access-Control-Allow-Headers", "Content-Type")
+        val r = NanoHTTPD.newChunkedResponse(status, mime, input)
+        r.addHeader("Access-Control-Allow-Origin", "*")
+        r.addHeader("Access-Control-Allow-Methods", "GET, PUT, OPTIONS")
+        r.addHeader("Access-Control-Allow-Headers", "Content-Type")
+        return r
     }
 
     private fun mimeType(name: String): String {
