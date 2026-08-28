@@ -41,4 +41,5 @@ android {
 
 dependencies {
     implementation("org.nanohttpd:nanohttpd:2.3.1")
+    implementation("androidx.leanback:leanback:1.1.0-rc02")
 }
