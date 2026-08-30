@@ -83,6 +83,40 @@ class MainActivity : Activity() {
                 "error"
             }
         }
+
+        @JavascriptInterface
+        fun getAutoStartConfig(): String {
+            return try {
+                val prefs = context.getSharedPreferences(BootReceiver.PREFS_NAME, Context.MODE_PRIVATE)
+                val enabled = prefs.getBoolean(BootReceiver.KEY_ENABLED, true)
+                val days = prefs.getString(BootReceiver.KEY_DAYS, "all") ?: "all"
+                val window = prefs.getString(BootReceiver.KEY_WINDOW, "before_9am") ?: "before_9am"
+                org.json.JSONObject().apply {
+                    put("enabled", enabled)
+                    put("days", days)
+                    put("window", window)
+                }.toString()
+            } catch (e: Exception) {
+                "{}"
+            }
+        }
+
+        @JavascriptInterface
+        fun saveAutoStartConfig(json: String): Boolean {
+            return try {
+                val obj = org.json.JSONObject(json)
+                val prefs = context.getSharedPreferences(BootReceiver.PREFS_NAME, Context.MODE_PRIVATE)
+                prefs.edit().apply {
+                    if (obj.has("enabled")) putBoolean(BootReceiver.KEY_ENABLED, obj.getBoolean("enabled"))
+                    if (obj.has("days")) putString(BootReceiver.KEY_DAYS, obj.getString("days"))
+                    if (obj.has("window")) putString(BootReceiver.KEY_WINDOW, obj.getString("window"))
+                }.apply()
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "saveAutoStartConfig error", e)
+                false
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -547,8 +547,18 @@ html.screen-save .stage {
 html.screen-save, html.screen-save body { background: #000 !important; }
 html.screen-save .stage { opacity: 0 !important; }
 
+/* Scheduled Night Mode / Deep Sleep */
+body.night-mode {
+  filter: brightness(0.28) contrast(1.15);
+  transition: filter 1.5s var(--ease-snap);
+}
+body.night-mode .screen {
+  background: #000;
+}
+
 /* Rain chance (next 6h) */
 .w-rain { font-size: clamp(12px, 1.7vh, 22px); color: var(--fg-2); }
+.w-rain-alert { color: #5ea0ff !important; font-weight: 550; }
 
 /* Weather condition glyph (idea 5) */
 .w-icon { font-size: clamp(18px, 2.6vh, 34px); line-height: 1; }

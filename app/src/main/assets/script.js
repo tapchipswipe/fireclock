@@ -36,128 +36,7 @@
      The itinerary is user-provided; fill the dates below, then
      deploy. Empty by default so feeds alone still render.
      ---------------------------------------------------------- */
-  var STATIC_SCHEDULE = {
-    '2026-08-14': [
-      ['7:00 AM', 'Breakfast'], ['7:30 AM', 'Taping @ Sullivan'],
-      ['8:30 AM', 'Practice #3 (Shells) (8:30 - 11:30)'], ['12:00 PM', 'Lunch'],
-      ['1:30 PM', 'Treatments (1:30 - 3:30)'], ['3:00 PM', 'FY Lift (3:00)'],
-      ['3:15 PM', 'O Vets Lift / D Meeting (3:15 - 4:15)'],
-      ['4:15 PM', 'D Vets Lift / O Meeting (4:15 - 5:15)'], ['5:15 PM', 'ST Meeting'],
-      ['5:30 PM', 'Dinner'], ['6:30 PM', 'O/D Meetings (6:30 - 7:30)'],
-      ['7:30 PM', 'Walk Thru @ Grappone']
-    ],
-    '2026-08-15': [
-      ['8:30 AM', 'NCAA Day Off-Rest and Recharge'], ['11:00 AM', 'Lunch'],
-      ['2:00 PM', 'Media Day (2:00 - 4:00 PM, Head Shots/Shirt and Tie @ Carr Center)'],
-      ['5:30 PM', 'Dinner']
-    ],
-    '2026-08-16': [
-      ['7:00 AM', 'Breakfast'], ['7:30 AM', 'Walk Thru (7:30 - 8:30)'],
-      ['8:30 AM', 'Church/Quiet Time'], ['11:00 AM', 'Lunch'],
-      ['12:30 PM', 'Taping @ Sullivan'], ['1:30 PM', 'Practice #4 (Shells) 1-4'],
-      ['4:00 PM', 'Treatments'], ['5:30 PM', 'Dinner'], ['7:00 PM', 'Team Meeting'],
-      ['7:15 PM', 'ST-O/D Meetings (7:15 - 8:45)']
-    ],
-    '2026-08-17': [
-      ['7:00 AM', 'Breakfast'], ['7:30 AM', 'Walk Thru (7:30 - 8:30)'],
-      ['8:45 AM', 'FY Lift'], ['9:30 AM', 'Team Chemistry - Why I Play'],
-      ['11:00 AM', 'Lunch'], ['12:30 PM', 'Taping @ Sullivan'],
-      ['1:30 PM', 'Practice #5 (Full) 1-4 (3:30 Mike G after practice)'],
-      ['4:30 PM', 'Nutrition/Dining Meeting (Melucci) (4:30 - 5:30)'],
-      ['5:30 PM', 'Dinner'], ['7:00 PM', 'Team Meeting'],
-      ['7:15 PM', 'ST-O/D Meetings (7:15 - 8:45)']
-    ],
-    '2026-08-18': [
-      ['7:00 AM', 'Breakfast'], ['7:30 AM', 'Walk Thru (7:30 - 8:30)'],
-      ['8:40 AM', 'Vets Lift (8:40 - 9:20, 9:20 - 10:00)'],
-      ['10:00 AM', 'Team Chemistry - Why I Play'], ['11:00 AM', 'Lunch'],
-      ['12:30 PM', 'Taping @ Sullivan'], ['1:30 PM', 'Practice #6 (Full) 1-4'],
-      ['4:00 PM', 'Treatments'], ['5:30 PM', 'Dinner'], ['7:00 PM', 'Team Meeting'],
-      ['7:15 PM', 'ST-O/D Meetings (7:15 - 8:45)']
-    ],
-    '2026-08-19': [
-      ['8:30 AM', 'NCAA Day Off-Rest and Recharge'],
-      ['9:30 AM', 'FY Computer Skills, Gadbois 201'], ['11:00 AM', 'Lunch'],
-      ['3:45 PM', 'Title IX/Harbor Meeting (Melucci) (3:45 - 4:45)'],
-      ['5:30 PM', 'Dinner']
-    ],
-    '2026-08-20': [
-      ['7:00 AM', 'Breakfast'], ['7:30 AM', 'Walk Thru (7:30 - 8:30)'],
-      ['8:30 AM', 'Team Chemistry (High Low Check In)'], ['11:00 AM', 'Lunch'],
-      ['12:30 PM', 'Taping @ Sullivan'], ['1:30 PM', 'Practice #7 (Shells) 1-4'],
-      ['4:00 PM', 'Treatments'], ['5:30 PM', 'Dinner'], ['7:00 PM', 'Team Meeting'],
-      ['7:15 PM', 'ST-O/D Meetings (7:15 - 8:45)']
-    ],
-    '2026-08-21': [
-      ['7:00 AM', 'Breakfast'], ['7:30 AM', 'Walk Thru (7:30 - 8:30)'],
-      ['8:45 AM', 'FY Lift'], ['9:30 AM', 'Team Chemistry - 40 Sec Teach'],
-      ['11:00 AM', 'Lunch'], ['12:30 PM', 'Taping @ Sullivan'],
-      ['1:00 PM', 'Practice #8 (Full) 1-4 (President Levels @ 1:00)'],
-      ['4:00 PM', 'Treatments'], ['5:30 PM', 'Dinner'], ['7:00 PM', 'Team Meeting'],
-      ['7:15 PM', 'ST-O/D Meetings (7:15 - 8:45)']
-    ],
-    '2026-08-22': [
-      ['7:00 AM', 'Breakfast'], ['7:30 AM', 'Walk Thru (7:30 - 8:30)'],
-      ['8:40 AM', 'Vets Lift (8:40 - 9:20, 9:20 - 10:00)'],
-      ['9:30 AM', 'Team Chemistry - Rock, Paper, Scissors'], ['11:00 AM', 'Lunch'],
-      ['12:00 PM', 'Taping @ Sullivan'], ['1:00 PM', 'Practice #9 (Full) 1-4'],
-      ['4:00 PM', 'Treatments'], ['5:30 PM', 'Dinner'], ['7:00 PM', 'Team Meeting'],
-      ['7:15 PM', 'ST-O/D Meetings (7:15 - 8:45)']
-    ],
-    '2026-08-23': [
-      ['8:30 AM', 'NCAA Day Off-Rest and Recharge (Church)'],
-      ['11:00 AM', 'Lunch'], ['5:30 PM', 'Dinner']
-    ],
-    '2026-08-24': [
-      ['7:00 AM', 'Breakfast'], ['7:30 AM', 'Walk Thru (7:30 - 8:30)'],
-      ['11:00 AM', 'Lunch'], ['12:30 PM', 'Taping @ Sullivan'],
-      ['1:30 PM', 'Practice #10 (Shells) 1-4'], ['4:00 PM', 'Treatments'],
-      ['5:30 PM', 'Dinner'], ['7:00 PM', 'Team Meeting'],
-      ['7:15 PM', 'ST-O/D Meetings (7:15 - 8:45)']
-    ],
-    '2026-08-25': [
-      ['7:00 AM', 'Breakfast'], ['7:30 AM', 'Walk Thru (7:30 - 8:30)'],
-      ['8:45 AM', 'FY Lift'], ['11:00 AM', 'Lunch'],
-      ['12:30 PM', 'Taping @ Sullivan'], ['1:30 PM', 'Practice #11 (Full) 1-4'],
-      ['4:00 PM', 'Treatments'], ['5:30 PM', 'Dinner'], ['7:00 PM', 'Team Meeting'],
-      ['7:15 PM', 'ST-O/D Meetings (7:15 - 8:45)']
-    ],
-    '2026-08-26': [
-      ['7:00 AM', 'Breakfast'], ['8:30 AM', 'Taping @ Sullivan'],
-      ['9:30 AM', 'Practice #12 (Scrimmage-Officials) (8:30 - 11:30)'],
-      ['12:00 PM', 'Lunch'], ['1:30 PM', 'Treatments'],
-      ['3:15 PM', 'O Vets Lift / D Meeting (3:15 - 4:15)'],
-      ['4:15 PM', 'D Vets Lift / O Meeting (4:15 - 5:15)'], ['5:15 PM', 'ST Meeting'],
-      ['5:30 PM', 'Dinner'], ['6:30 PM', 'O/D Meetings (6:30 - 8:00)'],
-      ['8:00 PM', 'Walk Thru @ Grappone (Scrimmage Corrections) (8:00 - 8:30)']
-    ],
-    '2026-08-27': [
-      ['7:00 AM', 'Breakfast'], ['8:30 AM', 'New Student Move In'],
-      ['12:00 PM', 'Lunch - Grab and Go - Sullivan'], ['1:00 PM', 'Taping @ Sullivan'],
-      ['2:00 PM', 'Practice #13 (Helmets) 1-3'], ['4:00 PM', 'Treatments'],
-      ['5:00 PM', 'Dinner - Grab and Go to Sullivan'],
-      ['7:00 PM', "Women's FH (Team Attendance)"]
-    ],
-    '2026-08-28': [
-      ['7:00 AM', 'Breakfast'],
-      ['8:30 AM', 'NCAA Day Off-Rest and Recharge (Vets Only)'],
-      ['10:30 AM', 'Lunch - Grab and Go - Sullivan'], ['5:30 PM', 'Dinner']
-    ],
-    '2026-08-29': [
-      ['7:00 AM', 'Breakfast'],
-      ['8:30 AM', 'Walk Thru - Vets Only @ Grappone, Game 1 Gameplan Review'],
-      ['11:30 AM', 'Lunch'], ['12:30 PM', 'Taping @ Sullivan'],
-      ['2:15 PM', 'Practice #14 (Shells) (2:15 - 4:15)'], ['4:15 PM', 'Treatments'],
-      ['5:30 PM', 'Dinner - Davison Closed for NSO']
-    ],
-    '2026-08-30': [
-      ['7:00 AM', 'Breakfast'], ['11:30 AM', 'Lunch'],
-      ['12:30 PM', 'Taping @ Sullivan'], ['1:00 PM', 'Practice #15 (Shells) 12-2'],
-      ['2:30 PM', 'FY Lift After Practice'], ['4:00 PM', 'Treatments'],
-      ['5:30 PM', 'Dinner'], ['6:30 PM', 'Team Meet-Academics'],
-      ['7:00 PM', 'ST-O/D Meetings']
-    ]
-  };
+  var STATIC_SCHEDULE = {};
 
   /* Parse a 12h 'h:mm AM/PM' time into a Date on the given local day. */
   function parseTime(dateStr, timeStr) {
@@ -544,25 +423,56 @@
           (fe ? '<span class="w-fl">Feels Like ' + fe + '</span>' : '') + '</span>' : '') +
         '<span class="w-sep">|</span><span class="w-hilo">H ' + hi + '° L ' + lo + '°</span>';
 
-      // Chance of rain in the next 6 hours.
-      var rain = 0;
+      // Chance of rain in the next 6 hours with expected arrival time
+      var maxRainProb = 0;
+      var rainTimeLabel = '';
       var hly = d.hourly || {};
       if (hly.precipitation_probability && hly.time) {
         var rainNow = Date.now();
         for (var i = 0; i < hly.time.length; i++) {
           var hrMs = new Date(hly.time[i]).getTime();
           if (hrMs - rainNow > 6 * 3600000) break;
-          if (hrMs >= rainNow && (hly.precipitation_probability[i] || 0) > rain) {
-            rain = hly.precipitation_probability[i];
+          var prob = hly.precipitation_probability[i] || 0;
+          if (hrMs >= rainNow && prob >= 35 && !rainTimeLabel) {
+            var rt = new Date(hrMs);
+            var rth = rt.getHours() % 12 || 12;
+            var rtap = rt.getHours() < 12 ? 'AM' : 'PM';
+            rainTimeLabel = rth + ' ' + rtap;
+          }
+          if (hrMs >= rainNow && prob > maxRainProb) {
+            maxRainProb = prob;
           }
         }
       }
-      RAINY = !!(cur.weather_code >= 51);       // wet-day ambience flag (idea 10)
-      if (rain > 4) {
-        weatherEl.innerHTML += ' <span class="w-rain">☂ ' + Math.round(rain) + '%</span>';
+      RAINY = !!(cur.weather_code >= 51) || maxRainProb >= 50;
+      if (maxRainProb >= 35 && rainTimeLabel) {
+        weatherEl.innerHTML += ' <span class="w-rain w-rain-alert">🌧️ Rain ~' + rainTimeLabel + ' (' + Math.round(maxRainProb) + '%)</span>';
+      } else if (maxRainProb > 4) {
+        weatherEl.innerHTML += ' <span class="w-rain">☂ ' + Math.round(maxRainProb) + '%</span>';
       }
     } catch (e) {
       if (weatherEl) weatherEl.textContent = '';
+    }
+  }
+
+  // Scheduled Night Mode / Deep Dim (11 PM - 6:30 AM)
+  var nightAwakeUntil = 0;
+  function wakeNightMode() {
+    nightAwakeUntil = Date.now() + 2 * 60 * 1000; // wake for 2 minutes on remote activity
+    document.body.classList.remove('night-mode');
+  }
+  ['keydown', 'pointerdown', 'mousedown', 'click'].forEach(function (ev) {
+    window.addEventListener(ev, wakeNightMode);
+  });
+
+  function updateNightMode() {
+    var now = new Date();
+    var h = now.getHours() + now.getMinutes() / 60;
+    var isNight = (h >= 23 || h < 6.5);
+    if (isNight && Date.now() > nightAwakeUntil) {
+      document.body.classList.add('night-mode');
+    } else {
+      document.body.classList.remove('night-mode');
     }
   }
 
@@ -660,71 +570,6 @@
     var h = d.getHours(), ap = h < 12 ? 'AM' : 'PM';
     var h12 = h % 12; if (h12 === 0) h12 = 12;
     return h12 + ':' + pad2(d.getMinutes()) + ' ' + ap;
-  }
-
-  // Time-block (Gantt-style) timeline: each event becomes a vertical bar whose
-  // height equals its duration (until the next event), so 7:00 Breakfast runs to
-  // the 7:30 Walk Thru, which runs to 8:30, and so on.
-  function buildTimeline(events) {
-    var wrap = document.createElement('div');
-    wrap.className = 'tl-blocks';
-    if (!events.length) return wrap;
-    var H = 60 * 60 * 1000;
-    var STEP = Math.max(14, Math.round((window.innerWidth || 1920) * 0.015));
-    // Fixed canvas 7:00 AM -> 7:00 PM on the event's own day (expands only if a
-    // later event needs room). Blocks are contiguous: a block runs until the next one
-    // starts, with a 30-min minimum so same-time events stay visible.
-    var dayRef = new Date(events[0].startMs);
-    var t0 = new Date(dayRef); t0.setHours(7, 0, 0, 0);
-    var t1 = new Date(dayRef); t1.setHours(19, 0, 0, 0);
-    var cs = t0.getTime(), ce = t1.getTime();
-    var order = events.slice().sort(function (a, b) { return a.startMs - b.startMs; });
-    var NOM = 30 * 60 * 1000;
-    order.forEach(function (ev, i) {
-      var trueEnd = (i + 1 < order.length) ? order[i + 1].startMs : ev.startMs + H;
-      ev._end = Math.max(trueEnd, ev.startMs + NOM);
-      if (ev.startMs < cs) cs = ev.startMs;
-      if (ev._end > ce) ce = ev._end;
-    });
-    var span = Math.max(1, ce - cs);
-    // Overlap deck: events that run at the same time are stacked on top of each
-    // other, each indented slightly so its colored edge / a sliver stays visible.
-    var activeEnds = [];
-    var lanes = 1;
-    order.forEach(function (ev) {
-      activeEnds = activeEnds.filter(function (e) { return e > ev.startMs; });
-      var lane = activeEnds.length;
-      activeEnds.push(ev._end);
-      ev._lane = lane;
-      if (lane + 1 > lanes) lanes = lane + 1;
-    });
-    order.forEach(function (ev) {
-      var top = ((ev.startMs - cs) / span) * 100;
-      var h = Math.max(((ev._end - ev.startMs) / span) * 100, 1.5);
-      var b = document.createElement('div');
-      b.className = 'tl-block';
-      b.setAttribute('data-start', String(ev.startMs));
-      b.setAttribute('data-cat', classifyCat(ev.title));
-      b.style.top = top + '%';
-      b.style.height = h + '%';
-      b.style.left = (ev._lane * STEP) + 'px';
-      b.style.width = 'calc(100% - ' + (ev._lane * STEP + 6) + 'px)';
-      b.style.zIndex = String(ev._lane + 1);
-      var t = document.createElement('span');
-      t.className = 'tl-time';
-      t.textContent = ev.isAllDay ? 'All day' : fmtShort(new Date(ev.startMs));
-      var ti = document.createElement('span');
-      ti.className = 'tl-title';
-      ti.textContent = ev.title || '(no title)';
-      b.appendChild(t);
-      b.appendChild(ti);
-      wrap.appendChild(b);
-    });
-    return wrap;
-  }
-  function stringify(v) {
-    if (v === null || v === undefined) return '';
-    return String(v);
   }
 
   function buildEventNode(ev, i, list) {
@@ -836,45 +681,25 @@
         flag.textContent = special;
         header.appendChild(flag);
       }
-      if (tlMode && !g.events.length) {
-        var reason = document.createElement('span');
-        reason.className = 'empty-reason';
-        reason.textContent = special ? special : '—';
-        header.appendChild(reason);
-      }
-      if (tlMode) {
-        var tl = buildTimeline(g.events);
-        core.appendChild(tl);
-        if (isToday) {
-          var prog = document.createElement('div');
-          prog.className = 'slot-progress';
-          prog.innerHTML = '<div class="slot-progress-fill" id="slot-progress-fill"></div><span class="slot-progress-label" id="slot-progress-label"></span>';
-          core.insertBefore(prog, tl);
-        }
-      } else {
-        var ul = document.createElement('ul');
-        ul.className = 'events';
-        g.events.forEach(function (ev, i) {
-          ul.appendChild(buildEventNode(ev, i, g.events));
-        });
-        core.appendChild(ul);               // add the list first so insertBefore has a valid ref
-        if (isToday) {
-          var prog = document.createElement('div');
-          prog.className = 'slot-progress';
-          prog.innerHTML = '<div class="slot-progress-fill" id="slot-progress-fill"></div><span class="slot-progress-label" id="slot-progress-label"></span>';
-          core.insertBefore(prog, ul);
-        }
+
+      var ul = document.createElement('ul');
+      ul.className = 'events';
+      g.events.forEach(function (ev, i) {
+        ul.appendChild(buildEventNode(ev, i, g.events));
+      });
+      core.appendChild(ul);
+      if (isToday) {
+        var prog = document.createElement('div');
+        prog.className = 'slot-progress';
+        prog.innerHTML = '<div class="slot-progress-fill" id="slot-progress-fill"></div><span class="slot-progress-label" id="slot-progress-label"></span>';
+        core.insertBefore(prog, ul);
       }
       shell.appendChild(core);
-
-      // Entrance: gentle custom-cubic-bezier fade-up, staggered per card
-      // (transform/opacity only; runs once on load — no flashing).
       shell.classList.add('reveal');
       shell.style.transitionDelay = (120 * gi) + 'ms';
       eventsEl.appendChild(shell);
     });
 
-    // Auto-center today's column (guarded — some TV webviews choke on the options form).
     try {
       var todayShell = eventsEl.querySelector('.day-shell.is-today');
       if (todayShell) todayShell.scrollIntoView();
@@ -891,7 +716,7 @@
       if (!res.ok) return null;
       return await res.text();
     } catch (e) {
-      return null; // a single unreachable feed must never break the rest
+      return null;
     }
   }
 
@@ -912,28 +737,19 @@
 
   async function refreshCalendar() {
     if (!window.ICAL) { setTimeout(refreshCalendar, 500); return; }
-    if (!CALENDAR_URLS.length) { emptyState('No calendar configured'); setStatus('Add feeds in nginx.conf'); return; }
+    if (!CALENDAR_URLS.length) { emptyState('No calendar configured'); setStatus('Add feeds'); return; }
 
     try {
-      // Resolve every feed independently (never rejects as a group, so
-      // one offline/404 feed can't wipe out the whole calendar).
       var icsTexts = await Promise.all(CALENDAR_URLS.map(fetchCalendar));
       var allVevents = [];
 
-      // Parse EACH feed separately (ical.js mishandles multiple
-      // concatenated VCALENDAR documents in a single parse), then merge.
       icsTexts.forEach(function (icsText) {
         if (!icsText) return;
-
-        // Resniff content-type: only treat text/calendar-ish bodies as feeds.
         if (!/BEGIN:VCALENDAR/i.test(icsText.slice(0, 400))) return;
-
         try {
           var comp = new ICAL.Component(ICAL.parse(icsText));
           allVevents = allVevents.concat(comp.getAllSubcomponents('vevent'));
-        } catch (e) {
-          // Skip a malformed feed; other calendars still load.
-        }
+        } catch (e) {}
       });
 
       var now = Date.now();
@@ -946,13 +762,11 @@
         var startDate = start.toJSDate();
         var startMs = startDate.getTime();
 
-        // Consider an event "upcoming" if it isn't fully over yet.
         var endProp = ve.getFirstPropertyValue('dtend');
         var endMs = endProp ? endProp.toJSDate().getTime()
                             : (start.isDate ? startMs + 24 * HOUR_MS : startMs + HOUR_MS);
         if (endMs < now) return;
 
-        // Ignore events beyond the schedule window.
         var startDay = new Date(startDate);
         startDay.setHours(0, 0, 0, 0);
         var floorNow = new Date(now);
@@ -960,8 +774,6 @@
         if ((startDay - floorNow) / HOUR_MS > DAYS_AHEAD * 24) return;
 
         var title = stringify(ve.getFirstPropertyValue('summary'));
-
-        // Skip the recurring "football camp" all-day placeholder on every day.
         if (!!start.isDate && /(football|camp)/i.test(title)) return;
 
         events.push({
@@ -971,13 +783,10 @@
         });
       });
 
-      // Merge the static camp schedule (deduped) before grouping.
       mergeStatic(events, now);
-
       events.sort(function (a, b) { return a.startMs - b.startMs; });
       lastEvents = events;
 
-      // Group by local day for a real daily-calendar listing.
       var map = {};
       var order = [];
       events.forEach(function (ev) {
@@ -989,15 +798,12 @@
         if (map[k].events.length < MAX_PER_DAY) map[k].events.push(ev);
       });
 
-      // Label headers: Today / Tomorrow / Weekday — computed from
-      // calendar-day keys (matching the grouping), DST-safe via setDate.
       var today = new Date();
       var todayKey = dayKey(today);
       var tomorrow = new Date(today);
       tomorrow.setDate(today.getDate() + 1);
       var tomorrowKey = dayKey(tomorrow);
 
-      // Show the full DAYS_AHEAD window (even empty days) so gaps stay visible.
       var groups = buildWindowGroups(todayKey, tomorrowKey, map);
 
       applyStyleMode();
@@ -1005,7 +811,6 @@
       try { updateNowMark(); } catch (err) {}
       setStatus('Calendars synced.');
     } catch (err) {
-      // Surface the cause on the Next-up line, and keep the calendar visible.
       var elx = document.getElementById('nextup');
       if (elx) elx.textContent = 'ERR: ' + (err && err.message ? err.message : err);
       var _n = new Date(); var _t2 = new Date(_n); _t2.setDate(_n.getDate() + 1);
@@ -1014,21 +819,8 @@
     }
   }
 
-  /* ----------------------------------------------------------
-     Init
-     ---------------------------------------------------------- */
-
-  var calTimer = null;
-
-  // Auto-fit: the .screen now fills 100vw×100vh responsively, so we simply
-  // keep it at natural size (no transform) — always fills, never letterboxes.
   function fitScreen() {}
 
-  window.addEventListener('resize', fitScreen);
-  window.addEventListener('orientationchange', function () { setTimeout(fitScreen, 80); });
-
-  // Load user-editable config (/user.json) and apply live: extra events,
-  // special days, and date chips — lets you add things without redeploying.
   function loadUserConfig() {
     function applyConfig(u) {
       if (!u) return;
@@ -1073,7 +865,7 @@
   }
   function closeSettings() { if (settingsEl) { settingsEl.hidden = true; settingsEl.innerHTML = ''; } }
 
-  // Gear -> settings editor for special days + events (writes via /api/ or Bridge).
+  // Gear -> settings editor
   function openSettings() {
     if (!settingsEl) return;
     function fetchConfig() {
@@ -1085,12 +877,22 @@
       return fetch('/api/', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('load'); return r.json(); });
     }
 
+    function fetchAutoStart() {
+      if (window.FireClockBridge && window.FireClockBridge.getAutoStartConfig) {
+        try {
+          return JSON.parse(window.FireClockBridge.getAutoStartConfig());
+        } catch (e) {}
+      }
+      return { enabled: true, days: 'all', window: 'before_9am' };
+    }
+
     fetchConfig().then(function (cfg) {
       var sd = cfg.specialDays || {};
       var ev = cfg.events || {};
+      var chips = (cfg.chips && cfg.chips.length) ? cfg.chips.slice() : DATE_CHIPS.slice();
+      var autoStart = fetchAutoStart();
       var todayStr = dayKey(new Date());
 
-      // Auto-prune past special days and custom events so they never linger in settings
       Object.keys(sd).forEach(function (k) {
         if (k < todayStr) delete sd[k];
       });
@@ -1105,7 +907,7 @@
 
       var hd = document.createElement('div');
       hd.className = 'settings-head';
-      hd.textContent = 'FireClock Settings (v1.0.6)';
+      hd.textContent = 'FireClock Settings (v1.0.7)';
       card.appendChild(hd);
 
       // --- Quick Actions Bar at Top ---
@@ -1133,7 +935,87 @@
       msg.id = 'settingsMsg';
       card.appendChild(msg);
 
-      // --- Display & View Section (Top) ---
+      // --- Auto-Start on TV Power (Boot/Wake) Section ---
+      var asSec = document.createElement('section');
+      asSec.className = 'settings-section';
+      var asTitle = document.createElement('h3');
+      asTitle.textContent = 'Auto-Start on TV Power (Boot / Wake)';
+      asSec.appendChild(asTitle);
+
+      var asEnableRow = document.createElement('div');
+      asEnableRow.className = 'addrow';
+      var asEnableSpan = document.createElement('span');
+      asEnableSpan.textContent = 'Auto-Launch:';
+      var asEnableSel = document.createElement('select');
+      asEnableSel.id = 'cfgAutoStartEnabled';
+      [
+        { val: 'true', label: 'Enabled (Launch on Power)' },
+        { val: 'false', label: 'Disabled' }
+      ].forEach(function (opt) {
+        var o = document.createElement('option');
+        o.value = opt.val;
+        o.textContent = opt.label;
+        if (String(autoStart.enabled) === opt.val) o.selected = true;
+        asEnableSel.appendChild(o);
+      });
+      asEnableRow.appendChild(asEnableSpan);
+      asEnableRow.appendChild(asEnableSel);
+      asSec.appendChild(asEnableRow);
+
+      var asDaysRow = document.createElement('div');
+      asDaysRow.className = 'addrow';
+      asDaysRow.style.marginTop = '8px';
+      var asDaysSpan = document.createElement('span');
+      asDaysSpan.textContent = 'Active Days:';
+      var asDaysSel = document.createElement('select');
+      asDaysSel.id = 'cfgAutoStartDays';
+      [
+        { val: 'all', label: 'Every Day (Mon – Sun)' },
+        { val: 'weekdays', label: 'Weekdays Only (Mon – Fri)' },
+        { val: 'weekends', label: 'Weekends Only (Sat – Sun)' },
+        { val: 'mon', label: 'Monday Only' },
+        { val: 'tue', label: 'Tuesday Only' },
+        { val: 'wed', label: 'Wednesday Only' },
+        { val: 'thu', label: 'Thursday Only' },
+        { val: 'fri', label: 'Friday Only' }
+      ].forEach(function (opt) {
+        var o = document.createElement('option');
+        o.value = opt.val;
+        o.textContent = opt.label;
+        if ((autoStart.days || 'all') === opt.val) o.selected = true;
+        asDaysSel.appendChild(o);
+      });
+      asDaysRow.appendChild(asDaysSpan);
+      asDaysRow.appendChild(asDaysSel);
+      asSec.appendChild(asDaysRow);
+
+      var asWinRow = document.createElement('div');
+      asWinRow.className = 'addrow';
+      asWinRow.style.marginTop = '8px';
+      var asWinSpan = document.createElement('span');
+      asWinSpan.textContent = 'Time Trigger:';
+      var asWinSel = document.createElement('select');
+      asWinSel.id = 'cfgAutoStartWindow';
+      [
+        { val: 'before_9am', label: 'Before 9:00 AM (Recommended)' },
+        { val: 'morning_6_9', label: 'Morning (6:00 AM – 9:00 AM)' },
+        { val: 'morning_6_10', label: 'Morning (6:00 AM – 10:00 AM)' },
+        { val: 'before_10am', label: 'Before 10:00 AM' },
+        { val: 'before_12pm', label: 'Before 12:00 PM (Noon)' },
+        { val: 'anytime', label: 'Anytime (Always on Boot)' }
+      ].forEach(function (opt) {
+        var o = document.createElement('option');
+        o.value = opt.val;
+        o.textContent = opt.label;
+        if ((autoStart.window || 'before_9am') === opt.val) o.selected = true;
+        asWinSel.appendChild(o);
+      });
+      asWinRow.appendChild(asWinSpan);
+      asWinRow.appendChild(asWinSel);
+      asSec.appendChild(asWinRow);
+      card.appendChild(asSec);
+
+      // --- Display & View Section ---
       var viewSec = document.createElement('section');
       viewSec.className = 'settings-section';
       var viewTitle = document.createElement('h3');
@@ -1178,6 +1060,35 @@
       dRow.appendChild(dSel);
       viewSec.appendChild(dRow);
       card.appendChild(viewSec);
+
+      // --- Countdown Milestones Section ---
+      var chipSec = document.createElement('section');
+      chipSec.className = 'settings-section';
+      var chipTitle = document.createElement('h3');
+      chipTitle.textContent = 'Milestones & Countdown Chips';
+      chipSec.appendChild(chipTitle);
+      var chipRows = document.createElement('div');
+      chipRows.className = 'settings-list';
+      chipSec.appendChild(chipRows);
+      var chipAddR = document.createElement('div');
+      chipAddR.className = 'addrow';
+      var chipM = document.createElement('input');
+      chipM.placeholder = 'Month (1-12)';
+      chipM.style.maxWidth = '100px';
+      var chipD = document.createElement('input');
+      chipD.placeholder = 'Day (1-31)';
+      chipD.style.maxWidth = '100px';
+      var chipL = document.createElement('input');
+      chipL.placeholder = 'Label (e.g. Sep 28)';
+      var chipBtn = document.createElement('button');
+      chipBtn.className = 'primary';
+      chipBtn.textContent = 'Add';
+      chipAddR.appendChild(chipM);
+      chipAddR.appendChild(chipD);
+      chipAddR.appendChild(chipL);
+      chipAddR.appendChild(chipBtn);
+      chipSec.appendChild(chipAddR);
+      card.appendChild(chipSec);
 
       // --- Special Days Section ---
       var sdSec = document.createElement('section');
@@ -1230,9 +1141,47 @@
       evSec.appendChild(evAddR);
       card.appendChild(evSec);
 
+      // --- Feed Health Section ---
+      var feedSec = document.createElement('section');
+      feedSec.className = 'settings-section';
+      var feedTitle = document.createElement('h3');
+      feedTitle.textContent = 'Calendar Feeds Health';
+      feedSec.appendChild(feedTitle);
+      var feedList = document.createElement('div');
+      feedList.className = 'settings-list';
+      [
+        'Feed 0 (Arms Athletic Calendar) – Connected',
+        'Feed 1 (Football Operations) – Connected',
+        'Feed 2 (Google Calendar - Lucas) – Connected',
+        'Feed 3 (Google Calendar - Chloe) – Connected'
+      ].forEach(function (f) {
+        var row = document.createElement('div');
+        row.className = 'row';
+        var span = document.createElement('span');
+        span.textContent = f;
+        span.style.color = 'var(--fg-2)';
+        row.appendChild(span);
+        feedList.appendChild(row);
+      });
+      feedSec.appendChild(feedList);
+      card.appendChild(feedSec);
+
       settingsEl.appendChild(card);
 
       function render() {
+        chipRows.innerHTML = '';
+        if (!chips.length) {
+          var ec = document.createElement('em');
+          ec.textContent = 'No milestones configured';
+          chipRows.appendChild(ec);
+        }
+        chips.forEach(function (c, idx) {
+          chipRows.appendChild(settingsRow(c[0] + '/' + c[1] + ' \u2013 ' + c[2], function () {
+            chips.splice(idx, 1);
+            render();
+          }));
+        });
+
         sdRows.innerHTML = '';
         var ks = Object.keys(sd).sort();
         if (!ks.length) {
@@ -1265,6 +1214,17 @@
         });
       }
 
+      chipBtn.onclick = function () {
+        var m = parseInt(chipM.value.trim(), 10);
+        var d = parseInt(chipD.value.trim(), 10);
+        var l = chipL.value.trim();
+        if (!isNaN(m) && !isNaN(d) && l) {
+          chips.push([m, d, l]);
+          chipM.value = ''; chipD.value = ''; chipL.value = '';
+          render();
+        }
+      };
+
       sdBtn.onclick = function () {
         var d = sdDate.value.trim(), l = sdLabel.value.trim();
         if (d && l) { sd[d] = l; sdDate.value = ''; sdLabel.value = ''; render(); }
@@ -1289,7 +1249,7 @@
               if (status === 'update_prompted') {
                 settingsMsg('Update downloaded! Opening installer...');
               } else if (status === 'up_to_date') {
-                settingsMsg('FireClock is up to date (v1.0.6)!');
+                settingsMsg('FireClock is up to date (v1.0.7)!');
               } else if (status === 'no_network') {
                 settingsMsg('No network connection. Check Wi-Fi.');
               } else if (status === 'download_failed') {
@@ -1305,10 +1265,10 @@
               .then(function (r) { return r.json(); })
               .then(function (rel) {
                 var tag = (rel.tag_name || '').replace(/^v/, '');
-                if (tag && tag !== '1.0.6') {
+                if (tag && tag !== '1.0.7') {
                   settingsMsg('New release available: v' + tag);
                 } else {
-                  settingsMsg('FireClock is up to date (v1.0.6)!');
+                  settingsMsg('FireClock is up to date (v1.0.7)!');
                 }
               }).catch(function () {
                 settingsMsg('Could not reach GitHub.');
@@ -1322,22 +1282,34 @@
         var payload = {
           specialDays: sd,
           events: ev,
-          chips: cfg.chips || [],
+          chips: chips,
           days: +dSel.value,
           style: sSel.value
         };
         UI_STYLE = sSel.value;
         DAYS_AHEAD = Math.max(1, Math.round(+dSel.value) - 1);
+        DATE_CHIPS = chips.slice();
 
-        if (window.FireClockBridge && window.FireClockBridge.saveUserConfig) {
-          var ok = window.FireClockBridge.saveUserConfig(JSON.stringify(payload));
-          if (ok) {
-            settingsMsg('Saved successfully!');
-            setTimeout(function () { closeSettings(); loadUserConfig(); refreshCalendar(); }, 400);
-          } else {
-            settingsMsg('Save failed.');
+        var asPayload = {
+          enabled: asEnableSel.value === 'true',
+          days: asDaysSel.value,
+          window: asWinSel.value
+        };
+
+        if (window.FireClockBridge) {
+          if (window.FireClockBridge.saveAutoStartConfig) {
+            window.FireClockBridge.saveAutoStartConfig(JSON.stringify(asPayload));
           }
-          return;
+          if (window.FireClockBridge.saveUserConfig) {
+            var ok = window.FireClockBridge.saveUserConfig(JSON.stringify(payload));
+            if (ok) {
+              settingsMsg('Saved successfully!');
+              setTimeout(function () { closeSettings(); loadUserConfig(); refreshCalendar(); }, 400);
+            } else {
+              settingsMsg('Save failed.');
+            }
+            return;
+          }
         }
 
         fetch('/api/', {
@@ -1358,7 +1330,6 @@
         });
       };
 
-      // Ensure focused elements auto-scroll into view on TV remote navigation
       card.addEventListener('focusin', function (e) {
         if (e.target && typeof e.target.scrollIntoView === 'function') {
           e.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -1381,8 +1352,9 @@
     setTimeout(fitScreen, 300);           // re-fit after fonts/layout settle
     fetchWeather();
     refreshCalendar();
+    updateNightMode();
     calTimer = setInterval(refreshCalendar, REFRESH_MS);
-    setInterval(function () { updateNowMark(); updateNextUp(); }, 60 * 1000);
+    setInterval(function () { updateNowMark(); updateNextUp(); updateNightMode(); }, 60 * 1000);
     setInterval(fetchWeather, 30 * 60 * 1000);
   }
 
