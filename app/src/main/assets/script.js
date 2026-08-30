@@ -26,7 +26,7 @@
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
   var MAX_PER_DAY = 20; // show the full daily itinerary in each column
-  var UI_STYLE = 'timeline'; // 'timeline' (hero+rail) or 'compact' (classic); switch in Settings
+  var UI_STYLE = 'compact'; // 'compact' (classic Double-Bezel) or 'timeline'; switch in Settings
 
   var clockEl = document.getElementById('clock-time');
 
@@ -1065,7 +1065,7 @@
   }
   function closeSettings() { if (settingsEl) { settingsEl.hidden = true; settingsEl.innerHTML = ''; } }
 
-  // Gear -> settings editor for special days + events (writes via /api/).
+  // Gear -> settings editor for special days + events (writes via /api/ or Bridge).
   function openSettings() {
     if (!settingsEl) return;
     function fetchConfig() {
@@ -1081,95 +1081,231 @@
       var sd = cfg.specialDays || {};
       var ev = cfg.events || {};
       settingsEl.innerHTML = ''; settingsEl.hidden = false;
-      var card = document.createElement('div'); card.className = 'settings-card';
-      var hd = document.createElement('div'); hd.className = 'settings-head'; hd.textContent = 'FireClock Settings'; card.appendChild(hd);
+      var card = document.createElement('div');
+      card.className = 'settings-card';
+      card.setAttribute('tabindex', '0');
 
-      var sdSec = document.createElement('section');
-      var sdTitle = document.createElement('h3'); sdTitle.textContent = 'Special Days'; sdSec.appendChild(sdTitle);
-      var sdRows = document.createElement('div'); sdRows.className = 'settings-list'; sdSec.appendChild(sdRows);
-      var sdAddR = document.createElement('div'); sdAddR.className = 'addrow';
-      var sdDate = document.createElement('input'); sdDate.placeholder = 'YYYY-MM-DD';
-      var sdLabel = document.createElement('input'); sdLabel.placeholder = 'Label';
-      var sdBtn = document.createElement('button'); sdBtn.className = 'primary'; sdBtn.textContent = 'Add';
-      sdAddR.appendChild(sdDate); sdAddR.appendChild(sdLabel); sdAddR.appendChild(sdBtn); sdSec.appendChild(sdAddR);
-      card.appendChild(sdSec);
+      var hd = document.createElement('div');
+      hd.className = 'settings-head';
+      hd.textContent = 'FireClock Settings';
+      card.appendChild(hd);
 
-      var evSec = document.createElement('section');
-      var evTitle = document.createElement('h3'); evTitle.textContent = 'Events'; evSec.appendChild(evTitle);
-      var evRows = document.createElement('div'); evRows.className = 'settings-list'; evSec.appendChild(evRows);
-      var evAddR = document.createElement('div'); evAddR.className = 'addrow';
-      var evDate = document.createElement('input'); evDate.placeholder = 'YYYY-MM-DD';
-      var evTime = document.createElement('input'); evTime.placeholder = 'h:mm AM/PM';
-      var evTt = document.createElement('input'); evTt.placeholder = 'Title';
-      var evBtn = document.createElement('button'); evBtn.className = 'primary'; evBtn.textContent = 'Add';
-      evAddR.appendChild(evDate); evAddR.appendChild(evTime); evAddR.appendChild(evTt); evAddR.appendChild(evBtn); evSec.appendChild(evAddR);
-      card.appendChild(evSec);
+      // --- Quick Actions Bar at Top ---
+      var topAct = document.createElement('div');
+      topAct.className = 'settings-actions top-actions';
+      var saveBtn = document.createElement('button');
+      saveBtn.id = 'cfgSave';
+      saveBtn.className = 'primary';
+      saveBtn.textContent = 'Save Changes';
+      var clsBtn = document.createElement('button');
+      clsBtn.id = 'cfgClose';
+      clsBtn.textContent = 'Close';
+      topAct.appendChild(saveBtn);
+      topAct.appendChild(clsBtn);
+      card.appendChild(topAct);
 
-      var dSec = document.createElement('section');
-      dSec.className = 'settings-section';
-      var dTitle = document.createElement('h3'); dTitle.textContent = 'Day Window'; dSec.appendChild(dTitle);
-      var dRow = document.createElement('div'); dRow.className = 'addrow';
-      var dSpan = document.createElement('span'); dSpan.textContent = 'Days shown:'; dRow.appendChild(dSpan);
-      var dSel = document.createElement('select'); dSel.id = 'cfgDays';
+      var msg = document.createElement('div');
+      msg.id = 'settingsMsg';
+      card.appendChild(msg);
+
+      // --- Display & View Section (Top) ---
+      var viewSec = document.createElement('section');
+      viewSec.className = 'settings-section';
+      var viewTitle = document.createElement('h3');
+      viewTitle.textContent = 'Display & Layout';
+      viewSec.appendChild(viewTitle);
+
+      var sRow = document.createElement('div');
+      sRow.className = 'addrow';
+      var sSpan = document.createElement('span');
+      sSpan.textContent = 'Calendar Style:';
+      var sSel = document.createElement('select');
+      sSel.id = 'cfgStyle';
+      [
+        { val: 'compact', label: 'Classic Columns (Double-Bezel)' },
+        { val: 'timeline', label: 'Timeline / Gantt View' }
+      ].forEach(function (opt) {
+        var o = document.createElement('option');
+        o.value = opt.val;
+        o.textContent = opt.label;
+        if ((cfg.style || UI_STYLE) === opt.val) o.selected = true;
+        sSel.appendChild(o);
+      });
+      sRow.appendChild(sSpan);
+      sRow.appendChild(sSel);
+      viewSec.appendChild(sRow);
+
+      var dRow = document.createElement('div');
+      dRow.className = 'addrow';
+      dRow.style.marginTop = '8px';
+      var dSpan = document.createElement('span');
+      dSpan.textContent = 'Days Shown:';
+      var dSel = document.createElement('select');
+      dSel.id = 'cfgDays';
       [1, 2, 3, 4, 5].forEach(function (n) {
-        var o = document.createElement('option'); o.value = n; o.textContent = n + ' days';
+        var o = document.createElement('option');
+        o.value = n;
+        o.textContent = n + ' days';
         if ((cfg.days || (DAYS_AHEAD + 1)) === n) o.selected = true;
         dSel.appendChild(o);
       });
-      dRow.appendChild(dSel); dSec.appendChild(dRow); card.appendChild(dSec);
+      dRow.appendChild(dSpan);
+      dRow.appendChild(dSel);
+      viewSec.appendChild(dRow);
+      card.appendChild(viewSec);
 
-      var sSec = document.createElement('section');
-      sSec.className = 'settings-section';
-      var sTitle = document.createElement('h3'); sTitle.textContent = 'Calendar style'; sSec.appendChild(sTitle);
-      var sRow = document.createElement('div'); sRow.className = 'addrow';
-      var sSpan = document.createElement('span'); sSpan.textContent = 'View:'; sRow.appendChild(sSpan);
-      var sSel = document.createElement('select'); sSel.id = 'cfgStyle';
-      ['timeline', 'compact'].forEach(function (m) {
-        var o = document.createElement('option'); o.value = m;
-        o.textContent = (m === 'timeline') ? 'Timeline (hero)' : 'Classic list';
-        if ((cfg.style || UI_STYLE) === m) o.selected = true;
-        sSel.appendChild(o);
-      });
-      sRow.appendChild(sSel); sSec.appendChild(sRow); card.appendChild(sSec);
+      // --- Special Days Section ---
+      var sdSec = document.createElement('section');
+      sdSec.className = 'settings-section';
+      var sdTitle = document.createElement('h3');
+      sdTitle.textContent = 'Special Days (Accent Glow)';
+      sdSec.appendChild(sdTitle);
+      var sdRows = document.createElement('div');
+      sdRows.className = 'settings-list';
+      sdSec.appendChild(sdRows);
+      var sdAddR = document.createElement('div');
+      sdAddR.className = 'addrow';
+      var sdDate = document.createElement('input');
+      sdDate.placeholder = 'YYYY-MM-DD';
+      var sdLabel = document.createElement('input');
+      sdLabel.placeholder = 'Label (e.g. Game Day)';
+      var sdBtn = document.createElement('button');
+      sdBtn.className = 'primary';
+      sdBtn.textContent = 'Add';
+      sdAddR.appendChild(sdDate);
+      sdAddR.appendChild(sdLabel);
+      sdAddR.appendChild(sdBtn);
+      sdSec.appendChild(sdAddR);
+      card.appendChild(sdSec);
 
-      var act = document.createElement('div'); act.className = 'settings-actions';
-      var saveBtn = document.createElement('button'); saveBtn.id = 'cfgSave'; saveBtn.className = 'primary'; saveBtn.textContent = 'Save';
-      var clsBtn = document.createElement('button'); clsBtn.id = 'cfgClose'; clsBtn.textContent = 'Close';
-      act.appendChild(saveBtn); act.appendChild(clsBtn); card.appendChild(act);
-      var msg = document.createElement('div'); msg.id = 'settingsMsg'; card.appendChild(msg);
+      // --- Custom Events Section ---
+      var evSec = document.createElement('section');
+      evSec.className = 'settings-section';
+      var evTitle = document.createElement('h3');
+      evTitle.textContent = 'Custom Events';
+      evSec.appendChild(evTitle);
+      var evRows = document.createElement('div');
+      evRows.className = 'settings-list';
+      evSec.appendChild(evRows);
+      var evAddR = document.createElement('div');
+      evAddR.className = 'addrow';
+      var evDate = document.createElement('input');
+      evDate.placeholder = 'YYYY-MM-DD';
+      var evTime = document.createElement('input');
+      evTime.placeholder = 'h:mm AM/PM';
+      var evTt = document.createElement('input');
+      evTt.placeholder = 'Title';
+      var evBtn = document.createElement('button');
+      evBtn.className = 'primary';
+      evBtn.textContent = 'Add';
+      evAddR.appendChild(evDate);
+      evAddR.appendChild(evTime);
+      evAddR.appendChild(evTt);
+      evAddR.appendChild(evBtn);
+      evSec.appendChild(evAddR);
+      card.appendChild(evSec);
+
       settingsEl.appendChild(card);
 
       function render() {
         sdRows.innerHTML = '';
         var ks = Object.keys(sd);
-        if (!ks.length) { var e = document.createElement('em'); e.textContent = 'None'; sdRows.appendChild(e); }
-        ks.forEach(function (k) { sdRows.appendChild(settingsRow(k + ' \u2013 ' + sd[k], function () { delete sd[k]; render(); })); });
+        if (!ks.length) {
+          var e = document.createElement('em');
+          e.textContent = 'None configured';
+          sdRows.appendChild(e);
+        }
+        ks.forEach(function (k) {
+          sdRows.appendChild(settingsRow(k + ' \u2013 ' + sd[k], function () {
+            delete sd[k];
+            render();
+          }));
+        });
+
         evRows.innerHTML = '';
         var dk = Object.keys(ev);
-        if (!dk.length) { var e2 = document.createElement('em'); e2.textContent = 'None'; evRows.appendChild(e2); }
-        dk.forEach(function (d) { (ev[d] || []).slice().forEach(function (g, idx) {
-          evRows.appendChild(settingsRow(d + ' ' + g[0] + ' ' + g[1], function () { ev[d].splice(idx, 1); if (!ev[d].length) delete ev[d]; render(); }));
-        }); });
+        if (!dk.length) {
+          var e2 = document.createElement('em');
+          e2.textContent = 'None configured';
+          evRows.appendChild(e2);
+        }
+        dk.forEach(function (d) {
+          (ev[d] || []).slice().forEach(function (g, idx) {
+            evRows.appendChild(settingsRow(d + ' ' + g[0] + ' ' + g[1], function () {
+              ev[d].splice(idx, 1);
+              if (!ev[d].length) delete ev[d];
+              render();
+            }));
+          });
+        });
       }
-      sdBtn.onclick = function () { var d = sdDate.value.trim(), l = sdLabel.value.trim(); if (d && l) { sd[d] = l; render(); } };
-      evBtn.onclick = function () { var d = evDate.value.trim(), t = evTime.value.trim(), ti = evTt.value.trim(); if (d && t && ti) { (ev[d] = ev[d] || []).push([t, ti]); render(); } };
+
+      sdBtn.onclick = function () {
+        var d = sdDate.value.trim(), l = sdLabel.value.trim();
+        if (d && l) { sd[d] = l; sdDate.value = ''; sdLabel.value = ''; render(); }
+      };
+      evBtn.onclick = function () {
+        var d = evDate.value.trim(), t = evTime.value.trim(), ti = evTt.value.trim();
+        if (d && t && ti) {
+          (ev[d] = ev[d] || []).push([t, ti]);
+          evDate.value = ''; evTime.value = ''; evTt.value = '';
+          render();
+        }
+      };
       clsBtn.onclick = closeSettings;
+
       saveBtn.onclick = function () {
-        var payload = { specialDays: sd, events: ev, chips: cfg.chips || [], days: +dSel.value, style: sSel.value };
+        var payload = {
+          specialDays: sd,
+          events: ev,
+          chips: cfg.chips || [],
+          days: +dSel.value,
+          style: sSel.value
+        };
+        UI_STYLE = sSel.value;
+        DAYS_AHEAD = Math.max(1, Math.round(+dSel.value) - 1);
+
         if (window.FireClockBridge && window.FireClockBridge.saveUserConfig) {
           var ok = window.FireClockBridge.saveUserConfig(JSON.stringify(payload));
-          if (ok) { settingsMsg('Saved!'); closeSettings(); loadUserConfig(); refreshCalendar(); }
-          else settingsMsg('Save failed.');
+          if (ok) {
+            settingsMsg('Saved successfully!');
+            setTimeout(function () { closeSettings(); loadUserConfig(); refreshCalendar(); }, 400);
+          } else {
+            settingsMsg('Save failed.');
+          }
           return;
         }
-        fetch('/api/', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-          .then(function (r) { return r.json(); }).then(function (res) {
-            if (res && res.ok) { settingsMsg('Saved!'); closeSettings(); loadUserConfig(); refreshCalendar(); }
-            else settingsMsg('Error: ' + (res && res.error || 'save failed'));
-          }).catch(function () { settingsMsg('Save failed.'); });
+
+        fetch('/api/', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(function (r) {
+          return r.json();
+        }).then(function (res) {
+          if (res && res.ok) {
+            settingsMsg('Saved successfully!');
+            setTimeout(function () { closeSettings(); loadUserConfig(); refreshCalendar(); }, 400);
+          } else {
+            settingsMsg('Error: ' + (res && res.error || 'save failed'));
+          }
+        }).catch(function () {
+          settingsMsg('Save failed.');
+        });
       };
+
+      // Ensure focused elements auto-scroll into view on TV remote navigation
+      card.addEventListener('focusin', function (e) {
+        if (e.target && typeof e.target.scrollIntoView === 'function') {
+          e.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      });
+
       render();
-    }).catch(function () { settingsMsg('Could not load config.'); });
+      setTimeout(function () { sSel.focus(); }, 100);
+    }).catch(function () {
+      settingsMsg('Could not load config.');
+    });
   }
 
   function init() {

@@ -654,36 +654,52 @@ html.screen-save .noise { opacity: 0 !important; }
 .settings {
   position: fixed; inset: 0; z-index: 70;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.72); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  background: rgba(0,0,0,0.78); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
   padding: clamp(8px, 2vh, 24px);
 }
 .settings[hidden] { display: none; }
 .settings-card {
-  width: min(620px, 94vw); max-height: 86vh; overflow: auto;
-  background: var(--ink-1); border: 1px solid var(--hair); border-radius: clamp(18px, 3vh, 32px);
-  padding: clamp(16px, 2.6vh, 30px); color: var(--fg-1); font-family: var(--font-display);
-  box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  width: min(640px, 94vw); max-height: 82vh; overflow-y: auto; overflow-x: hidden;
+  background: var(--ink-1); border: 1px solid rgba(255,255,255,0.18); border-radius: clamp(18px, 3vh, 32px);
+  padding: clamp(16px, 2.6vh, 28px); color: var(--fg-1); font-family: var(--font-display);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.7); scroll-behavior: smooth; outline: none;
 }
-.settings-head { font-weight: 650; font-size: clamp(18px, 3vh, 30px); letter-spacing: -0.01em; margin-bottom: 8px; }
-.settings-card h3 { font-size: clamp(13px,2vh,20px); color: var(--fg-2); letter-spacing: 1px; text-transform: uppercase; margin: 14px 0 6px; }
+.settings-head { font-weight: 700; font-size: clamp(18px, 3vh, 28px); letter-spacing: -0.01em; margin-bottom: 6px; }
+.settings-card h3 { font-size: clamp(12px, 1.8vh, 17px); color: var(--accent); letter-spacing: 1px; text-transform: uppercase; margin: 16px 0 8px; font-weight: 600; }
 .settings-card input {
-  width: 100%; margin: 3px 0; padding: 8px 10px; border-radius: 10px;
+  width: 100%; margin: 3px 0; padding: 10px 12px; border-radius: 10px;
   border: 1px solid var(--hair); background: rgba(255,255,255,0.06); color: var(--fg-1);
   font-family: var(--font-mono); font-size: 15px;
 }
-.addrow { display: flex; gap: clamp(5px,1vw,10px); align-items: center; }
+.addrow { display: flex; gap: clamp(6px, 1vw, 12px); align-items: center; }
 .addrow input { flex: 1; min-width: 0; }
 .addrow button { flex: 0 0 auto; }
-.settings .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.settings .row button { background: transparent; color: var(--fg-2); border: 0; font-size: 18px; cursor: pointer; padding: 2px 6px; }
-.settings-list em { color: var(--fg-3); }
-.settings-actions { display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end; }
-.settings-section { margin-top: 6px; }
-.settings-card select { background: rgba(255,255,255,.06); color: var(--fg-1); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; padding: 6px 10px; font: inherit; }
-.settings-card .addrow span { color: var(--fg-2); }
-.settings button { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--hair); background: rgba(255,255,255,0.08); color: var(--fg-1); cursor: pointer; }
-.settings button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-#settingsMsg { margin-top: 8px; min-height: 18px; font-size: 13px; color: var(--fg-2); }
+.settings .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.settings .row button { background: transparent; color: var(--fg-2); border: 0; font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.settings-list em { color: var(--fg-3); font-size: 14px; }
+.settings-actions { display: flex; gap: 12px; margin-top: 14px; justify-content: flex-end; }
+.settings-actions.top-actions { margin-top: 4px; margin-bottom: 8px; justify-content: flex-start; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; }
+.settings-section { margin-top: 10px; }
+.settings-card select {
+  background: rgba(255,255,255,.09); color: var(--fg-1); border: 1px solid rgba(255,255,255,.2);
+  border-radius: 10px; padding: 8px 14px; font: inherit; font-size: 15px; flex: 1; cursor: pointer;
+}
+.settings-card .addrow span { color: var(--fg-2); min-width: 130px; font-weight: 500; font-size: 15px; }
+.settings button { padding: 9px 18px; border-radius: 10px; border: 1px solid var(--hair); background: rgba(255,255,255,0.08); color: var(--fg-1); cursor: pointer; font-weight: 550; font-size: 15px; }
+.settings button.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 650; }
+#settingsMsg { margin-top: 6px; min-height: 20px; font-size: 14px; color: var(--accent); font-weight: 500; }
+
+/* Fire TV remote focus rings */
+.gear:focus,
+.settings-card:focus,
+.settings button:focus,
+.settings select:focus,
+.settings input:focus,
+.settings .row button:focus {
+  outline: 3px solid #ffb455 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 16px rgba(255, 180, 85, 0.6);
+}
 
 
 /* ============================================================
