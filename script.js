@@ -1032,9 +1032,20 @@
   function loadUserConfig() {
     function applyConfig(u) {
       if (!u) return;
+      var todayStr = dayKey(new Date());
       if (Array.isArray(u.chips) && u.chips.length) DATE_CHIPS = u.chips.slice();
-      if (u.specialDays) { for (var k in u.specialDays) SPECIAL_DAYS[k] = u.specialDays[k]; }
-      if (u.events) USER_EVENTS = u.events;
+      if (u.specialDays) {
+        for (var k in u.specialDays) {
+          if (k >= todayStr) SPECIAL_DAYS[k] = u.specialDays[k];
+        }
+      }
+      if (u.events) {
+        var cleanEv = {};
+        for (var d in u.events) {
+          if (d >= todayStr) cleanEv[d] = u.events[d];
+        }
+        USER_EVENTS = cleanEv;
+      }
       if (u.days && !isNaN(+u.days)) DAYS_AHEAD = Math.max(1, Math.round(+u.days) - 1);
       if (u.style === 'timeline' || u.style === 'compact') UI_STYLE = u.style;
       renderCountdowns();
@@ -1077,6 +1088,16 @@
     fetchConfig().then(function (cfg) {
       var sd = cfg.specialDays || {};
       var ev = cfg.events || {};
+      var todayStr = dayKey(new Date());
+
+      // Auto-prune past special days and custom events so they never linger in settings
+      Object.keys(sd).forEach(function (k) {
+        if (k < todayStr) delete sd[k];
+      });
+      Object.keys(ev).forEach(function (d) {
+        if (d < todayStr) delete ev[d];
+      });
+
       settingsEl.innerHTML = ''; settingsEl.hidden = false;
       var card = document.createElement('div');
       card.className = 'settings-card';
@@ -1084,7 +1105,7 @@
 
       var hd = document.createElement('div');
       hd.className = 'settings-head';
-      hd.textContent = 'FireClock Settings (v1.0.4)';
+      hd.textContent = 'FireClock Settings (v1.0.5)';
       card.appendChild(hd);
 
       // --- Quick Actions Bar at Top ---
@@ -1206,7 +1227,7 @@
 
       function render() {
         sdRows.innerHTML = '';
-        var ks = Object.keys(sd);
+        var ks = Object.keys(sd).sort();
         if (!ks.length) {
           var e = document.createElement('em');
           e.textContent = 'None configured';
@@ -1220,7 +1241,7 @@
         });
 
         evRows.innerHTML = '';
-        var dk = Object.keys(ev);
+        var dk = Object.keys(ev).sort();
         if (!dk.length) {
           var e2 = document.createElement('em');
           e2.textContent = 'None configured';
