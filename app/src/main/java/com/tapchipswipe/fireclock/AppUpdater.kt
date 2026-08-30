@@ -1,20 +1,16 @@
 package com.tapchipswipe.fireclock
 
-import android.app.DownloadManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.net.Uri
-import android.os.Environment
 import android.util.Log
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
+import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -24,6 +20,7 @@ object AppUpdater {
     private const val APK_URL = "https://github.com/tapchipswipe/fireclock/releases/latest/download/app-release-signed.apk"
     private const val PREFS_NAME = "fireclock_updater"
     private const val KEY_LAST_CHECK = "last_check_timestamp"
+    private const val COOLDOWN_MS = 60 * 1000L // 1 minute cooldown between checks
 
     suspend fun checkForUpdate(context: Context): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -32,11 +29,20 @@ object AppUpdater {
 
             val tagName = fetchLatestVersion() ?: return@withContext false
             val currentVersion = getCurrentVersion(context)
+            Log.i(TAG, "Update check: installed=$currentVersion, latest=$tagName")
+
             if (tagName.isBlank() || currentVersion.isBlank()) return@withContext false
 
             val isUpdate = compareVersions(tagName, currentVersion) > 0
             if (isUpdate) {
-                scheduleDownload(context)
+                Log.i(TAG, "New version found ($tagName > $currentVersion), downloading APK...")
+                val apkFile = downloadApk(context)
+                if (apkFile != null && apkFile.exists() && apkFile.length() > 100000) {
+                    Log.i(TAG, "APK downloaded (${apkFile.length()} bytes), prompting install...")
+                    withContext(Dispatchers.Main) {
+                        promptInstall(context, apkFile)
+                    }
+                }
             }
             markChecked(context)
             isUpdate
@@ -67,44 +73,57 @@ object AppUpdater {
         }
     }
 
-    private fun scheduleDownload(context: Context) {
-        try {
-            val request = android.app.DownloadManager.Request(Uri.parse(APK_URL)).apply {
-                setTitle("FireClock Update")
-                setDescription("Downloading latest version...")
-                setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "fireclock-update.apk")
-                setMimeType("application/vnd.android.package-archive")
+    private fun downloadApk(context: Context): File? {
+        return try {
+            val destFile = File(context.cacheDir, "fireclock-update.apk")
+            if (destFile.exists()) destFile.delete()
+
+            val url = URL(APK_URL)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.instanceFollowRedirects = true
+            conn.connectTimeout = 15000
+            conn.readTimeout = 30000
+            conn.setRequestProperty("User-Agent", "FireClock-Updater")
+
+            // Handle GitHub release redirects (302 -> S3 / release asset)
+            var currentConn = conn
+            var code = currentConn.responseCode
+            var redirects = 0
+            while ((code == 301 || code == 302 || code == 303 || code == 307 || code == 308) && redirects < 5) {
+                val loc = currentConn.getHeaderField("Location") ?: break
+                currentConn.disconnect()
+                val nextUrl = URL(loc)
+                currentConn = nextUrl.openConnection() as HttpURLConnection
+                currentConn.connectTimeout = 15000
+                currentConn.readTimeout = 30000
+                currentConn.setRequestProperty("User-Agent", "FireClock-Updater")
+                code = currentConn.responseCode
+                redirects++
             }
 
-            val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            val downloadId = dm.enqueue(request)
+            if (code != 200) {
+                Log.w(TAG, "APK download HTTP error $code")
+                return null
+            }
 
-            val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-            val receiver = object : BroadcastReceiver() {
-                override fun onReceive(ctx: Context, intent: Intent) {
-                    val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-                    if (id == downloadId) {
-                        ctx.unregisterReceiver(this)
-                        val uri = dm.getUriForDownloadedFile(downloadId)
-                        if (uri != null) {
-                            promptInstall(ctx, uri)
-                        }
-                    }
+            currentConn.inputStream.use { input ->
+                FileOutputStream(destFile).use { output ->
+                    input.copyTo(output)
                 }
             }
-            context.registerReceiver(receiver, filter)
+            destFile
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to schedule download", e)
+            Log.e(TAG, "APK download failed", e)
+            null
         }
     }
 
-    private fun promptInstall(context: Context, apkUri: Uri) {
+    private fun promptInstall(context: Context, apkFile: File) {
         try {
             val uri = FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.provider",
-                File(apkUri.path ?: return)
+                apkFile
             )
 
             val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -115,7 +134,7 @@ object AppUpdater {
 
             context.startActivity(intent)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to prompt install", e)
+            Log.e(TAG, "Failed to launch installer", e)
         }
     }
 
@@ -142,8 +161,7 @@ object AppUpdater {
     private fun shouldCheck(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val lastCheck = prefs.getLong(KEY_LAST_CHECK, 0)
-        val oneDayMs = 24 * 60 * 60 * 1000
-        return System.currentTimeMillis() - lastCheck > oneDayMs
+        return System.currentTimeMillis() - lastCheck > COOLDOWN_MS
     }
 
     private fun markChecked(context: Context) {

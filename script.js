@@ -635,12 +635,8 @@
   function applyStyleMode() {
     if (!eventsEl) return;
     var cols = DAYS_AHEAD + 1;
-    var mode;
-    if (UI_STYLE === 'compact' || cols > 5) mode = 'compact';
-    else if (UI_STYLE === 'timeline') mode = 'timeline';
-    else mode = '';
-    if (mode) eventsEl.setAttribute('data-mode', mode);
-    else eventsEl.removeAttribute('data-mode');
+    var mode = (UI_STYLE === 'timeline' && cols <= 5) ? 'timeline' : 'compact';
+    eventsEl.setAttribute('data-mode', mode);
   }
 
   // Classify an event title for subtle per-kind color coding.
@@ -774,6 +770,7 @@
   // Render events date-grouped: each day has a header (Today / Tomorrow /
   // Weekday + date) with that day's events beneath, like a calendar.
   function renderCalendar(groups) {
+    applyStyleMode();
     clearEvents();
 
     if (!groups.length) {
@@ -781,7 +778,7 @@
       return;
     }
 
-    var tlMode = eventsEl.getAttribute('data-mode') === 'timeline';
+    var tlMode = (UI_STYLE === 'timeline') && (eventsEl.getAttribute('data-mode') === 'timeline');
 
     groups.forEach(function (g, gi) {
       var isToday = (g.label === 'Today');
@@ -1087,7 +1084,7 @@
 
       var hd = document.createElement('div');
       hd.className = 'settings-head';
-      hd.textContent = 'FireClock Settings';
+      hd.textContent = 'FireClock Settings (v1.0.4)';
       card.appendChild(hd);
 
       // --- Quick Actions Bar at Top ---
