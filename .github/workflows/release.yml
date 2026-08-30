@@ -28,32 +28,10 @@ jobs:
           api-level: 34
           build-tools: 34.0.0
 
-      - name: Build release APK
-        run: gradle assembleRelease
-
-      - name: Generate signing keystore
+      - name: Build and sign release APK
         run: |
-          keytool -genkeypair -v \
-            -keystore release.jks \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -alias fireclock \
-            -storepass android -keypass android \
-            -dname "CN=FireClock, OU=Dev, O=TapChipSwipe, L=Manchester, S=NH, C=US"
-
-      - name: Sign APK
-        run: |
-          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
-            --ks release.jks \
-            --ks-key-alias fireclock \
-            --ks-pass pass:android \
-            --key-pass pass:android \
-            --out app/build/outputs/apk/release/app-release-signed.apk \
-            app/build/outputs/apk/release/app-release-unsigned.apk
-
-      - name: Verify signed APK
-        run: |
-          $ANDROID_HOME/build-tools/34.0.0/apksigner verify \
-            --verbose app/build/outputs/apk/release/app-release-signed.apk
+          gradle assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/app-release-signed.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

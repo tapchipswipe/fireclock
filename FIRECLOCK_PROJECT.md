@@ -133,3 +133,26 @@ curl -s -o /dev/null -w "%{http_code}" http://100.111.217.42:8081/   # → 200
   1. **True show-off** — fully blank panel; only Fully Kiosk's screen-off capability can do this (loses the visible time).
   2. **Ultra-dark faint time + next event** — current approach (faint clock ~10%/next ~12% white).
 - "LED-off black with visible time" is physically impossible together. If user wants max panel saving, wire Fully Kiosk screen-off OR blank everything in sleep. Revisit if they pick a direction.
+
+---
+
+## 15. Native Standalone Fire TV App (Self-Contained APK)
+
+As of version **1.0.1+**, FireClock runs directly on the Fire TV as a standalone native Android TV application (`com.tapchipswipe.fireclock`), completely removing the dependency on TrueNAS or Fully Kiosk Browser.
+
+### Architecture & Standalone Operation
+- **Embedded Server (`EmbeddedServer.kt`):** An embedded NanoHTTPD instance runs locally on `http://127.0.0.1:8080/`.
+- **Dynamic Asset Serving:** Serves `index.html`, `style.css`, and `script.js` directly from the APK assets, avoiding stale disk cache issues.
+- **On-Device Proxying:** Proxies `.ics` feeds (`/cal/0..3`) and Open-Meteo weather (`/weather`) directly through the Android network stack with proper timeouts, eliminating CORS restrictions.
+- **Config Storage:** `/user.json` and `/api/` (GET/PUT) read and persist custom user events/settings in internal app storage (`context.filesDir/user.json`), with fallback to packaged default `fireclock_user.json`.
+- **Over-The-Air (OTA) Updates (`AppUpdater.kt`):** Built-in background update checker queries GitHub Releases API on launch. If a new version exists, it downloads and prompts the installer.
+- **Deterministic Keystore (`app/keystore.jks`):** Pinned signing keystore ensures all CI and local builds share the identical signature, preventing `INSTALL_FAILED_UPDATE_INCOMPATIBLE` during OTA updates.
+
+### Building & Deploying the APK
+- **Local Build:** `gradle assembleRelease` produces `app/build/outputs/apk/release/app-release.apk`.
+- **Automated CI Releases:** Pushing to `main` or triggering `.github/workflows/release.yml` builds, signs, and publishes a new GitHub release asset (`app-release-signed.apk`).
+- **Sideloading to Fire TV:**
+  ```bash
+  adb connect <fire-tv-ip>:5555
+  adb install -r app/build/outputs/apk/release/app-release.apk
+  ```

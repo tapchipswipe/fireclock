@@ -11,17 +11,28 @@ android {
         applicationId = "com.tapchipswipe.fireclock"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("keystore.jks")
+            storePassword = "android"
+            keyAlias = "fireclock"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         debug {
             isDebuggable = true
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -37,6 +48,17 @@ android {
     buildFeatures {
         viewBinding = false
     }
+}
+
+val copyWebAssets = tasks.register<Copy>("copyWebAssets") {
+    from("..") {
+        include("index.html", "style.css", "script.js", "fireclock_user.json")
+    }
+    into("src/main/assets")
+}
+
+tasks.named("preBuild") {
+    dependsOn(copyWebAssets)
 }
 
 dependencies {
