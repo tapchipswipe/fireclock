@@ -20,18 +20,32 @@ object AppUpdater {
     private const val APK_URL = "https://github.com/tapchipswipe/fireclock/releases/latest/download/app-release-signed.apk"
     private const val PREFS_NAME = "fireclock_updater"
     private const val KEY_LAST_CHECK = "last_check_timestamp"
-    private const val COOLDOWN_MS = 60 * 1000L // 1 minute cooldown between checks
+    private const val COOLDOWN_MS = 60 * 1000L // 1 minute cooldown between automatic checks
 
-    suspend fun checkForUpdate(context: Context): Boolean = withContext(Dispatchers.IO) {
+    suspend fun checkForUpdate(context: Context, force: Boolean = false): String = withContext(Dispatchers.IO) {
         try {
-            if (!isNetworkAvailable(context)) return@withContext false
-            if (!shouldCheck(context)) return@withContext false
+            if (!isNetworkAvailable(context)) {
+                Log.w(TAG, "No network available for update check")
+                return@withContext "no_network"
+            }
+            if (!force && !shouldCheck(context)) {
+                return@withContext "cooldown"
+            }
 
-            val tagName = fetchLatestVersion() ?: return@withContext false
+            val tagName = fetchLatestVersion()
+            if (tagName == null || tagName.isBlank()) {
+                Log.w(TAG, "Failed to fetch latest tag name from GitHub")
+                return@withContext "check_failed"
+            }
+
             val currentVersion = getCurrentVersion(context)
             Log.i(TAG, "Update check: installed=$currentVersion, latest=$tagName")
 
-            if (tagName.isBlank() || currentVersion.isBlank()) return@withContext false
+            if (currentVersion.isBlank()) {
+                return@withContext "check_failed"
+            }
+
+            markChecked(context)
 
             val isUpdate = compareVersions(tagName, currentVersion) > 0
             if (isUpdate) {
@@ -42,13 +56,18 @@ object AppUpdater {
                     withContext(Dispatchers.Main) {
                         promptInstall(context, apkFile)
                     }
+                    return@withContext "update_prompted"
+                } else {
+                    Log.e(TAG, "APK download failed or file too small")
+                    return@withContext "download_failed"
                 }
+            } else {
+                Log.i(TAG, "Already running latest version ($currentVersion)")
+                return@withContext "up_to_date"
             }
-            markChecked(context)
-            isUpdate
         } catch (e: Exception) {
             Log.e(TAG, "Update check failed", e)
-            false
+            "error"
         }
     }
 
@@ -85,7 +104,6 @@ object AppUpdater {
             conn.readTimeout = 30000
             conn.setRequestProperty("User-Agent", "FireClock-Updater")
 
-            // Handle GitHub release redirects (302 -> S3 / release asset)
             var currentConn = conn
             var code = currentConn.responseCode
             var redirects = 0

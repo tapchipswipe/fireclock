@@ -71,6 +71,18 @@ class MainActivity : Activity() {
                 false
             }
         }
+
+        @JavascriptInterface
+        fun checkForUpdates(): String {
+            return try {
+                kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                    AppUpdater.checkForUpdate(context, force = true)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Manual checkForUpdates bridge error", e)
+                "error"
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

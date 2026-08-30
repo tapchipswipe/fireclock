@@ -1105,7 +1105,7 @@
 
       var hd = document.createElement('div');
       hd.className = 'settings-head';
-      hd.textContent = 'FireClock Settings (v1.0.5)';
+      hd.textContent = 'FireClock Settings (v1.0.6)';
       card.appendChild(hd);
 
       // --- Quick Actions Bar at Top ---
@@ -1115,10 +1115,17 @@
       saveBtn.id = 'cfgSave';
       saveBtn.className = 'primary';
       saveBtn.textContent = 'Save Changes';
+
+      var updateBtn = document.createElement('button');
+      updateBtn.id = 'cfgUpdate';
+      updateBtn.textContent = 'Check for Updates';
+
       var clsBtn = document.createElement('button');
       clsBtn.id = 'cfgClose';
       clsBtn.textContent = 'Close';
+
       topAct.appendChild(saveBtn);
+      topAct.appendChild(updateBtn);
       topAct.appendChild(clsBtn);
       card.appendChild(topAct);
 
@@ -1271,6 +1278,45 @@
         }
       };
       clsBtn.onclick = closeSettings;
+
+      updateBtn.onclick = function () {
+        updateBtn.disabled = true;
+        settingsMsg('Checking for updates from GitHub...');
+        setTimeout(function () {
+          if (window.FireClockBridge && window.FireClockBridge.checkForUpdates) {
+            try {
+              var status = window.FireClockBridge.checkForUpdates();
+              if (status === 'update_prompted') {
+                settingsMsg('Update downloaded! Opening installer...');
+              } else if (status === 'up_to_date') {
+                settingsMsg('FireClock is up to date (v1.0.6)!');
+              } else if (status === 'no_network') {
+                settingsMsg('No network connection. Check Wi-Fi.');
+              } else if (status === 'download_failed') {
+                settingsMsg('Download failed. Check connection.');
+              } else {
+                settingsMsg('Check completed: ' + status);
+              }
+            } catch (err) {
+              settingsMsg('Error checking updates: ' + err.message);
+            }
+          } else {
+            fetch('https://api.github.com/repos/tapchipswipe/fireclock/releases/latest', { cache: 'no-store' })
+              .then(function (r) { return r.json(); })
+              .then(function (rel) {
+                var tag = (rel.tag_name || '').replace(/^v/, '');
+                if (tag && tag !== '1.0.6') {
+                  settingsMsg('New release available: v' + tag);
+                } else {
+                  settingsMsg('FireClock is up to date (v1.0.6)!');
+                }
+              }).catch(function () {
+                settingsMsg('Could not reach GitHub.');
+              });
+          }
+          setTimeout(function () { updateBtn.disabled = false; }, 3000);
+        }, 100);
+      };
 
       saveBtn.onclick = function () {
         var payload = {

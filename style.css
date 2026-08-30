@@ -678,7 +678,7 @@ html.screen-save .noise { opacity: 0 !important; }
 .settings .row button { background: transparent; color: var(--fg-2); border: 0; font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
 .settings-list em { color: var(--fg-3); font-size: 14px; }
 .settings-actions { display: flex; gap: 12px; margin-top: 14px; justify-content: flex-end; }
-.settings-actions.top-actions { margin-top: 4px; margin-bottom: 8px; justify-content: flex-start; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; }
+.settings-actions.top-actions { margin-top: 4px; margin-bottom: 8px; justify-content: flex-start; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; flex-wrap: wrap; }
 .settings-section { margin-top: 10px; }
 .settings-card select {
   background: rgba(255,255,255,.09); color: var(--fg-1); border: 1px solid rgba(255,255,255,.2);
