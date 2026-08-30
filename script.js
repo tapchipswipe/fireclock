@@ -51,6 +51,11 @@
     return new Date(+p[0], +p[1] - 1, +p[2], h, min, 0, 0);
   }
 
+  function stringify(v) {
+    if (v === null || v === undefined) return '';
+    return String(v);
+  }
+
   /* Merge STATIC_SCHEDULE with feed events: skip past/out-of-window,
      dedupe against feeds by minute|title, re-sort by start. */
   var USER_EVENTS = {}; // extra events from /user.json (editable on the NAS)
@@ -907,7 +912,7 @@
 
       var hd = document.createElement('div');
       hd.className = 'settings-head';
-      hd.textContent = 'FireClock Settings (v1.0.7)';
+      hd.textContent = 'FireClock Settings (v1.0.8)';
       card.appendChild(hd);
 
       // --- Quick Actions Bar at Top ---
@@ -1249,7 +1254,7 @@
               if (status === 'update_prompted') {
                 settingsMsg('Update downloaded! Opening installer...');
               } else if (status === 'up_to_date') {
-                settingsMsg('FireClock is up to date (v1.0.7)!');
+                settingsMsg('FireClock is up to date (v1.0.8)!');
               } else if (status === 'no_network') {
                 settingsMsg('No network connection. Check Wi-Fi.');
               } else if (status === 'download_failed') {
@@ -1265,10 +1270,10 @@
               .then(function (r) { return r.json(); })
               .then(function (rel) {
                 var tag = (rel.tag_name || '').replace(/^v/, '');
-                if (tag && tag !== '1.0.7') {
+                if (tag && tag !== '1.0.8') {
                   settingsMsg('New release available: v' + tag);
                 } else {
-                  settingsMsg('FireClock is up to date (v1.0.7)!');
+                  settingsMsg('FireClock is up to date (v1.0.8)!');
                 }
               }).catch(function () {
                 settingsMsg('Could not reach GitHub.');
