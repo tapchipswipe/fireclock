@@ -1033,9 +1033,7 @@
   // Load user-editable config (/user.json) and apply live: extra events,
   // special days, and date chips — lets you add things without redeploying.
   function loadUserConfig() {
-    fetch('/user.json', { cache: 'no-store' }).then(function (r) {
-      return r.ok ? r.json() : Promise.reject();
-    }).then(function (u) {
+    function applyConfig(u) {
       if (!u) return;
       if (Array.isArray(u.chips) && u.chips.length) DATE_CHIPS = u.chips.slice();
       if (u.specialDays) { for (var k in u.specialDays) SPECIAL_DAYS[k] = u.specialDays[k]; }
@@ -1044,7 +1042,17 @@
       if (u.style === 'timeline' || u.style === 'compact') UI_STYLE = u.style;
       renderCountdowns();
       refreshCalendar();
-    }).catch(function () {});
+    }
+    if (window.FireClockBridge && window.FireClockBridge.getUserConfig) {
+      try {
+        var raw = window.FireClockBridge.getUserConfig();
+        applyConfig(JSON.parse(raw));
+        return;
+      } catch (e) {}
+    }
+    fetch('/user.json', { cache: 'no-store' }).then(function (r) {
+      return r.ok ? r.json() : Promise.reject();
+    }).then(applyConfig).catch(function () {});
   }
 
   function escH(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -1060,7 +1068,16 @@
   // Gear -> settings editor for special days + events (writes via /api/).
   function openSettings() {
     if (!settingsEl) return;
-    fetch('/api/', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('load'); return r.json(); }).then(function (cfg) {
+    function fetchConfig() {
+      if (window.FireClockBridge && window.FireClockBridge.getUserConfig) {
+        try {
+          return Promise.resolve(JSON.parse(window.FireClockBridge.getUserConfig()));
+        } catch (e) {}
+      }
+      return fetch('/api/', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('load'); return r.json(); });
+    }
+
+    fetchConfig().then(function (cfg) {
       var sd = cfg.specialDays || {};
       var ev = cfg.events || {};
       settingsEl.innerHTML = ''; settingsEl.hidden = false;
@@ -1138,7 +1155,14 @@
       evBtn.onclick = function () { var d = evDate.value.trim(), t = evTime.value.trim(), ti = evTt.value.trim(); if (d && t && ti) { (ev[d] = ev[d] || []).push([t, ti]); render(); } };
       clsBtn.onclick = closeSettings;
       saveBtn.onclick = function () {
-        fetch('/api/', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ specialDays: sd, events: ev, chips: cfg.chips || [], days: +dSel.value, style: sSel.value }) })
+        var payload = { specialDays: sd, events: ev, chips: cfg.chips || [], days: +dSel.value, style: sSel.value };
+        if (window.FireClockBridge && window.FireClockBridge.saveUserConfig) {
+          var ok = window.FireClockBridge.saveUserConfig(JSON.stringify(payload));
+          if (ok) { settingsMsg('Saved!'); closeSettings(); loadUserConfig(); refreshCalendar(); }
+          else settingsMsg('Save failed.');
+          return;
+        }
+        fetch('/api/', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
           .then(function (r) { return r.json(); }).then(function (res) {
             if (res && res.ok) { settingsMsg('Saved!'); closeSettings(); loadUserConfig(); refreshCalendar(); }
             else settingsMsg('Error: ' + (res && res.error || 'save failed'));

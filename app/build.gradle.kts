@@ -11,8 +11,8 @@ android {
         applicationId = "com.tapchipswipe.fireclock"
         minSdk = 24
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.0.2"
     }
 
     signingConfigs {
@@ -62,7 +62,6 @@ tasks.named("preBuild") {
 }
 
 dependencies {
-    implementation("org.nanohttpd:nanohttpd:2.3.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("androidx.core:core-ktx:1.13.1")
 }
