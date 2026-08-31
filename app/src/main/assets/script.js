@@ -28,7 +28,7 @@
   var MAX_PER_DAY = 20; // show the full daily itinerary in each column
   var UI_STYLE = 'compact'; // 'compact' (classic Double-Bezel) or 'timeline'; switch in Settings
 
-  var WEB_APP_VERSION = '1.1.2';  // fallback when not running in the native APK
+  var WEB_APP_VERSION = '1.1.3';  // fallback when not running in the native APK
 
   function getAppVersion() {
     if (window.FireClockBridge && window.FireClockBridge.getAppVersion) {
@@ -180,6 +180,11 @@
   var milestonesEl = document.getElementById('milestones');
   var weatherEl = document.getElementById('weather');
   var newsTrackEl = document.getElementById('news-track');
+  var newsTickerEl = document.getElementById('newsticker');
+  var popupEl = document.getElementById('fc-popup');
+  var popupHeadEl = document.getElementById('fc-popup-head');
+  var popupBodyEl = document.getElementById('fc-popup-body');
+  var popupCloseEl = document.getElementById('fc-popup-close');
   var lastCountdownDayKey = '';
   var htmlEl = document.documentElement;
   var nextupEl = document.getElementById('nextup');
@@ -348,11 +353,153 @@
   ];
   var activeChipIndex = 0;
   var NEWS_REFRESH_MS = 20 * 60 * 1000;
+  var NEWS_ITEMS = [];
+  var lastWeatherData = null;
 
   function sortedChips() {
     return DATE_CHIPS.map(function (c, idx) {
       return { idx: idx, chip: c, days: daysUntil(c[0], c[1]) };
     }).sort(function (a, b) { return a.days - b.days; });
+  }
+
+  function openPopup(title, bodyHtml) {
+    if (!popupEl || !popupHeadEl || !popupBodyEl) return;
+    popupHeadEl.textContent = title || '';
+    popupBodyEl.innerHTML = bodyHtml || '';
+    popupEl.hidden = false;
+    if (newsTrackEl) newsTrackEl.classList.add('is-paused');
+    setTimeout(function () {
+      var focusable = popupBodyEl.querySelector('button, [tabindex="0"]');
+      if (focusable) focusable.focus();
+      else if (popupCloseEl) popupCloseEl.focus();
+    }, 50);
+  }
+
+  function closePopup() {
+    if (!popupEl) return;
+    popupEl.hidden = true;
+    if (popupBodyEl) popupBodyEl.innerHTML = '';
+    if (newsTrackEl) newsTrackEl.classList.remove('is-paused');
+  }
+
+  function setupPopups() {
+    if (popupCloseEl) popupCloseEl.addEventListener('click', closePopup);
+    if (popupEl) {
+      popupEl.addEventListener('click', function (ev) {
+        if (ev.target === popupEl) closePopup();
+      });
+    }
+    document.addEventListener('keydown', function (ev) {
+      if (!popupEl || popupEl.hidden) return;
+      if (ev.key === 'Escape' || ev.key === 'Back' || ev.key === 'Backspace') {
+        ev.preventDefault();
+        closePopup();
+      }
+    });
+    if (popupBodyEl) {
+      popupBodyEl.addEventListener('click', function (ev) {
+        var pick = ev.target.closest('.picker-item');
+        if (pick) {
+          var idx = parseInt(pick.getAttribute('data-idx'), 10);
+          if (!isNaN(idx)) {
+            activeChipIndex = idx;
+            lastCountdownDayKey = '';
+            renderCountdowns();
+            closePopup();
+          }
+        }
+      });
+    }
+  }
+
+  function openMilestonePicker() {
+    var sorted = sortedChips();
+    if (!sorted.length) return;
+    var html = '<div class="picker-list">';
+    sorted.forEach(function (entry, i) {
+      var c = entry.chip;
+      html += '<button type="button" class="picker-item' + (i === activeChipIndex ? ' is-active' : '') +
+        '" data-idx="' + i + '">' +
+        '<span class="picker-days">' + entry.days + ' days</span>' +
+        '<span class="picker-label">' + escH(c[2]) + '</span>' +
+        '</button>';
+    });
+    html += '</div>';
+    openPopup('Choose Important Date', html);
+  }
+
+  function openNewsPopup() {
+    if (!NEWS_ITEMS.length) {
+      openPopup('NPR Headlines', '<p class="popup-empty">No headlines loaded yet.</p>');
+      return;
+    }
+    var html = '<ul class="news-popup-list">';
+    NEWS_ITEMS.forEach(function (item) {
+      html += '<li class="news-popup-item">';
+      html += '<div class="news-popup-title">' + escH(item.title) + '</div>';
+      if (item.description) {
+        html += '<div class="news-popup-desc">' + escH(item.description) + '</div>';
+      }
+      html += '</li>';
+    });
+    html += '</ul>';
+    openPopup('NPR Headlines', html);
+  }
+
+  function openWeatherPopup() {
+    var d = lastWeatherData;
+    if (!d || !d.current || d.current.temperature_2m == null) {
+      openPopup('Weather', '<p class="popup-empty">Weather data is not available right now.</p>');
+      return;
+    }
+    var cur = d.current;
+    var daily = d.daily || {};
+    var code = cur.weather_code;
+    var icon = EMOJI[code] || '🌡️';
+    var desc = WMO[code] || '—';
+    var t = Math.round(cur.temperature_2m);
+    var fe = (cur.apparent_temperature != null) ? Math.round(cur.apparent_temperature) : null;
+    var hi = daily.temperature_2m_max ? Math.round(daily.temperature_2m_max[0]) : '–';
+    var lo = daily.temperature_2m_min ? Math.round(daily.temperature_2m_min[0]) : '–';
+    var rain = rainStats(d.hourly || {});
+    var rainPct = Math.round(rain.now || rain.max || 0);
+    var loc = WEATHER_LOC.label || (WEATHER_LOC.lat + ', ' + WEATHER_LOC.lon);
+
+    var html = '<div class="weather-popup">';
+    html += '<div class="weather-popup-hero">';
+    html += '<span class="weather-popup-icon">' + icon + '</span>';
+    html += '<span class="weather-popup-temp">' + t + '°</span>';
+    html += '<span class="weather-popup-desc">' + escH(desc) + '</span>';
+    html += '</div>';
+    html += '<div class="weather-popup-meta">';
+    html += '<span>' + escH(loc) + '</span>';
+    if (fe != null) html += '<span>Feels like ' + fe + '°</span>';
+    html += '<span>High ' + hi + '° · Low ' + lo + '°</span>';
+    html += '<span class="' + (rainPct >= 35 ? 'w-rain-alert' : '') + '">Rain chance ' + rainPct + '%' +
+      (rain.timeLabel && rainPct >= 35 ? ' around ' + rain.timeLabel : '') + '</span>';
+    if (daily.sunrise && daily.sunrise[0] && daily.sunset && daily.sunset[0]) {
+      var sr = new Date(daily.sunrise[0]);
+      var ss = new Date(daily.sunset[0]);
+      html += '<span>Sunrise ' + fmtShort(sr) + ' · Sunset ' + fmtShort(ss) + '</span>';
+    }
+    html += '</div>';
+
+    var hly = d.hourly || {};
+    if (hly.time && hly.precipitation_probability) {
+      html += '<div class="weather-popup-hourly"><h4>Next 6 hours</h4><ul>';
+      var now = Date.now();
+      var count = 0;
+      for (var i = 0; i < hly.time.length && count < 6; i++) {
+        var hrMs = new Date(hly.time[i]).getTime();
+        if (hrMs < now) continue;
+        var prob = hly.precipitation_probability[i] || 0;
+        html += '<li><span>' + fmtShort(new Date(hrMs)) + '</span><span>☂ ' + Math.round(prob) + '%</span></li>';
+        count++;
+      }
+      html += '</ul></div>';
+    }
+    html += '</div>';
+    openPopup('Weather', html);
   }
 
   function renderCountdowns() {
@@ -371,33 +518,52 @@
     var c = current.chip;
     var d = current.days;
     milestonesEl.innerHTML =
-      '<button type="button" class="milestone-btn" tabindex="0" aria-label="Important date, click to change">' +
+      '<button type="button" class="milestone-btn" tabindex="0" aria-label="Important date, click to choose">' +
         '<span class="ms-num">' + d + '</span>' +
         '<span class="ms-label">days · ' + escH(c[2]) + '</span>' +
         '<span class="ms-hint" aria-hidden="true">▾</span>' +
       '</button>';
   }
 
-  function cycleMilestone() {
-    var sorted = sortedChips();
-    if (!sorted.length) return;
-    activeChipIndex = (activeChipIndex + 1) % sorted.length;
-    lastCountdownDayKey = '';
-    renderCountdowns();
-  }
-
   function setupChips() {
     if (!milestonesEl) return;
     milestonesEl.addEventListener('click', function (ev) {
-      if (ev.target.closest('.milestone-btn')) cycleMilestone();
+      if (ev.target.closest('.milestone-btn')) openMilestonePicker();
     });
     milestonesEl.addEventListener('keydown', function (ev) {
       if (!(ev.key === 'Enter' || ev.key === ' ' || ev.key === 'OK')) return;
       if (ev.target.closest('.milestone-btn')) {
         ev.preventDefault();
-        cycleMilestone();
+        openMilestonePicker();
       }
     });
+  }
+
+  function setupNewsAndWeather() {
+    if (newsTickerEl) {
+      newsTickerEl.setAttribute('tabindex', '0');
+      newsTickerEl.setAttribute('role', 'button');
+      newsTickerEl.setAttribute('aria-label', 'News headlines, click for full list');
+      newsTickerEl.addEventListener('click', openNewsPopup);
+      newsTickerEl.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'OK') {
+          ev.preventDefault();
+          openNewsPopup();
+        }
+      });
+    }
+    if (weatherEl) {
+      weatherEl.addEventListener('click', function (ev) {
+        if (ev.target.closest('.weather-clickable')) openWeatherPopup();
+      });
+      weatherEl.addEventListener('keydown', function (ev) {
+        if (!(ev.key === 'Enter' || ev.key === ' ' || ev.key === 'OK')) return;
+        if (ev.target.closest('.weather-clickable')) {
+          ev.preventDefault();
+          openWeatherPopup();
+        }
+      });
+    }
   }
 
   // Time-of-day ambience (ideas 2, 5, 6, 12): warm evening, deep sleep dim,
@@ -549,7 +715,8 @@
     RAINY = !!(code >= 51) || rainPct >= 50;
 
     weatherEl.innerHTML =
-      '<div class="weather-card' + (fromCache ? ' is-cached' : '') + '">' +
+      '<button type="button" class="weather-card weather-clickable' + (fromCache ? ' is-cached' : '') +
+        '" tabindex="0" aria-label="Weather details, click for more">' +
         '<div class="w-row w-row-top">' +
           '<span class="w-icon">' + icon + '</span>' +
           '<span class="w-temp">' + t + '°</span>' +
@@ -561,7 +728,8 @@
           '<span class="' + rainClass + '">☂ ' + rainPct + '%' +
             (rain.timeLabel && rainPct >= 35 ? ' ~' + rain.timeLabel : '') + '</span>' +
         '</div>' +
-      '</div>';
+      '</button>';
+    lastWeatherData = d;
     return true;
   }
 
@@ -569,7 +737,7 @@
     if (!weatherEl) return;
     var cached = readWeatherCache();
     if (cached && cached.data && renderWeatherData(cached.data, true)) return;
-    weatherEl.innerHTML = '<span class="w-unavail">Weather unavailable</span>';
+    weatherEl.innerHTML = '<button type="button" class="weather-clickable w-unavail" tabindex="0">Weather unavailable</button>';
   }
 
   async function fetchWeather(isRetry) {
@@ -592,6 +760,12 @@
     }
   }
 
+  function stripHtml(s) {
+    var d = document.createElement('div');
+    d.innerHTML = String(s || '');
+    return (d.textContent || '').trim();
+  }
+
   async function fetchNews() {
     if (!newsTrackEl) return;
     try {
@@ -599,18 +773,23 @@
       if (!r.ok) throw new Error('news_http');
       var text = await r.text();
       var doc = new DOMParser().parseFromString(text, 'text/xml');
-      var titles = [];
-      doc.querySelectorAll('item title').forEach(function (node) {
-        var title = (node.textContent || '').trim();
-        if (title) titles.push(title);
+      NEWS_ITEMS = [];
+      doc.querySelectorAll('item').forEach(function (node) {
+        var title = (node.querySelector('title') || {}).textContent || '';
+        title = title.trim();
+        if (!title) return;
+        var description = stripHtml((node.querySelector('description') || {}).textContent || '');
+        NEWS_ITEMS.push({ title: title, description: description });
       });
-      if (!titles.length) throw new Error('news_empty');
+      if (!NEWS_ITEMS.length) throw new Error('news_empty');
+      var titles = NEWS_ITEMS.map(function (item) { return item.title; });
       var items = titles.slice(0, 14).map(function (title) {
         return '<span class="news-item">' + escH(title) + '</span>';
       }).join('<span class="news-dot"> · </span>');
       newsTrackEl.innerHTML = items + '<span class="news-dot"> · </span>' + items;
       newsTrackEl.classList.remove('is-static');
     } catch (e) {
+      NEWS_ITEMS = [];
       newsTrackEl.textContent = 'News headlines unavailable';
       newsTrackEl.classList.add('is-static');
     }
@@ -1660,7 +1839,9 @@
 
   function init() {
     startClock();
+    setupPopups();
     setupChips();
+    setupNewsAndWeather();
     if (gearEl) gearEl.addEventListener('click', openSettings);
     fitScreen();
     loadUserConfig();
