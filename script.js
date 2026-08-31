@@ -28,7 +28,15 @@
   var MAX_PER_DAY = 20; // show the full daily itinerary in each column
   var UI_STYLE = 'compact'; // 'compact' (classic Double-Bezel) or 'timeline'; switch in Settings
 
-  var clockEl = document.getElementById('clock-time');
+  var WEB_APP_VERSION = '1.0.9';  // fallback when not running in the native APK
+
+  function getAppVersion() {
+    if (window.FireClockBridge && window.FireClockBridge.getAppVersion) {
+      try { return window.FireClockBridge.getAppVersion(); } catch (e) {}
+    }
+    return WEB_APP_VERSION;
+  }
+
 
   /* ----------------------------------------------------------
      Static camp schedule (Aug 16-30)
@@ -969,7 +977,7 @@
 
       var hd = document.createElement('div');
       hd.className = 'settings-head';
-      hd.textContent = 'FireClock Settings (v1.0.9)';
+      hd.textContent = 'FireClock Settings (v' + getAppVersion() + ')';
       card.appendChild(hd);
 
       // --- Quick Actions Bar at Top ---
@@ -1429,7 +1437,7 @@
               if (status === 'update_prompted') {
                 settingsMsg('Update downloaded! Opening installer...');
               } else if (status === 'up_to_date') {
-                settingsMsg('FireClock is up to date (v1.0.9)!');
+                settingsMsg('FireClock is up to date (v' + getAppVersion() + ')!');
               } else if (status === 'no_network') {
                 settingsMsg('No network connection. Check Wi-Fi.');
               } else if (status === 'download_failed') {
@@ -1445,10 +1453,11 @@
               .then(function (r) { return r.json(); })
               .then(function (rel) {
                 var tag = (rel.tag_name || '').replace(/^v/, '');
-                if (tag && tag !== '1.0.9') {
-                  settingsMsg('New release available: v' + tag);
+                var installed = getAppVersion();
+                if (tag && tag !== installed) {
+                  settingsMsg('New release available: v' + tag + ' (installed: v' + installed + ')');
                 } else {
-                  settingsMsg('FireClock is up to date (v1.0.9)!');
+                  settingsMsg('FireClock is up to date (v' + installed + ')!');
                 }
               }).catch(function () {
                 settingsMsg('Could not reach GitHub.');

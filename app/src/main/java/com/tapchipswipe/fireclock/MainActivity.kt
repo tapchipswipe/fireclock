@@ -85,6 +85,16 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun getAppVersion(): String {
+            return try {
+                val pkg = context.packageManager.getPackageInfo(context.packageName, 0)
+                pkg.versionName ?: "unknown"
+            } catch (e: Exception) {
+                "unknown"
+            }
+        }
+
+        @JavascriptInterface
         fun checkForUpdates(): String {
             return try {
                 kotlinx.coroutines.runBlocking(Dispatchers.IO) {
