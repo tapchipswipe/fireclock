@@ -97,6 +97,15 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun getLatestReleaseVersion(): String {
+            return try {
+                AppUpdater.getLatestReleaseVersion() ?: ""
+            } catch (e: Exception) {
+                ""
+            }
+        }
+
+        @JavascriptInterface
         fun checkForUpdates(): String {
             return try {
                 kotlinx.coroutines.runBlocking(Dispatchers.IO) {

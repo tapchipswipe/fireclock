@@ -28,7 +28,7 @@
   var MAX_PER_DAY = 20; // show the full daily itinerary in each column
   var UI_STYLE = 'compact'; // 'compact' (classic Double-Bezel) or 'timeline'; switch in Settings
 
-  var WEB_APP_VERSION = '1.1.0';  // fallback when not running in the native APK
+  var WEB_APP_VERSION = '1.1.2';  // fallback when not running in the native APK
 
   function getAppVersion() {
     if (window.FireClockBridge && window.FireClockBridge.getAppVersion) {
@@ -37,6 +37,58 @@
     return WEB_APP_VERSION;
   }
 
+  function compareVersions(a, b) {
+    var ap = String(a).split('.').map(function (n) { return parseInt(n, 10) || 0; });
+    var bp = String(b).split('.').map(function (n) { return parseInt(n, 10) || 0; });
+    var len = Math.max(ap.length, bp.length);
+    for (var i = 0; i < len; i++) {
+      var av = ap[i] || 0;
+      var bv = bp[i] || 0;
+      if (av !== bv) return av > bv ? 1 : -1;
+    }
+    return 0;
+  }
+
+  function parseUpdateResult(raw) {
+    try {
+      var obj = JSON.parse(raw);
+      if (obj && obj.status) return obj;
+    } catch (e) {}
+    return { status: String(raw || ''), current: getAppVersion(), latest: null };
+  }
+
+  function verifyLatestRelease(installed, onDone) {
+    fetch('https://api.github.com/repos/tapchipswipe/fireclock/releases/latest', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (rel) {
+        var latest = (rel.tag_name || '').replace(/^v/, '');
+        onDone(latest, installed);
+      })
+      .catch(function () { onDone(null, installed); });
+  }
+
+  function showUpdateStatus(result) {
+    var installed = result.current || getAppVersion();
+    var latest = result.latest;
+    var status = result.status;
+    if (status === 'update_prompted') {
+      settingsMsg('Update downloaded! Opening installer...' + (latest ? ' (v' + latest + ')' : ''));
+      return;
+    }
+    if (status === 'no_network') {
+      settingsMsg('No network connection. Check Wi-Fi.');
+      return;
+    }
+    if (status === 'download_failed') {
+      settingsMsg('Download failed' + (latest ? ' for v' + latest : '') + '. Check connection.');
+      return;
+    }
+    if (status === 'up_to_date') {
+      settingsMsg('FireClock is up to date (v' + installed + (latest ? ', latest v' + latest : '') + ')!');
+      return;
+    }
+    settingsMsg('Check completed: ' + status + (latest ? ' (latest v' + latest + ')' : ''));
+  }
 
   /* ----------------------------------------------------------
      Static camp schedule (Aug 16-30)
@@ -1485,35 +1537,41 @@
         setTimeout(function () {
           if (window.FireClockBridge && window.FireClockBridge.checkForUpdates) {
             try {
-              var status = window.FireClockBridge.checkForUpdates();
-              if (status === 'update_prompted') {
-                settingsMsg('Update downloaded! Opening installer...');
-              } else if (status === 'up_to_date') {
-                settingsMsg('FireClock is up to date (v' + getAppVersion() + ')!');
-              } else if (status === 'no_network') {
-                settingsMsg('No network connection. Check Wi-Fi.');
-              } else if (status === 'download_failed') {
-                settingsMsg('Download failed. Check connection.');
-              } else {
-                settingsMsg('Check completed: ' + status);
+              var result = parseUpdateResult(window.FireClockBridge.checkForUpdates());
+              if (result.status === 'up_to_date' && (!result.latest || compareVersions(result.latest, result.current || getAppVersion()) <= 0)) {
+                verifyLatestRelease(result.current || getAppVersion(), function (latest, installed) {
+                  if (latest && compareVersions(latest, installed) > 0) {
+                    settingsMsg('Update available: v' + latest + ' (installed v' + installed + '). Tap Check again to download.');
+                    if (window.FireClockBridge.checkForUpdates) {
+                      setTimeout(function () {
+                        var retry = parseUpdateResult(window.FireClockBridge.checkForUpdates());
+                        showUpdateStatus(retry);
+                        setTimeout(function () { updateBtn.disabled = false; }, 3000);
+                      }, 500);
+                    } else {
+                      setTimeout(function () { updateBtn.disabled = false; }, 3000);
+                    }
+                    return;
+                  }
+                  showUpdateStatus({ status: 'up_to_date', current: installed, latest: latest || result.latest });
+                  setTimeout(function () { updateBtn.disabled = false; }, 3000);
+                });
+                return;
               }
+              showUpdateStatus(result);
             } catch (err) {
               settingsMsg('Error checking updates: ' + err.message);
             }
           } else {
-            fetch('https://api.github.com/repos/tapchipswipe/fireclock/releases/latest', { cache: 'no-store' })
-              .then(function (r) { return r.json(); })
-              .then(function (rel) {
-                var tag = (rel.tag_name || '').replace(/^v/, '');
-                var installed = getAppVersion();
-                if (tag && tag !== installed) {
-                  settingsMsg('New release available: v' + tag + ' (installed: v' + installed + ')');
-                } else {
-                  settingsMsg('FireClock is up to date (v' + installed + ')!');
-                }
-              }).catch(function () {
-                settingsMsg('Could not reach GitHub.');
-              });
+            verifyLatestRelease(getAppVersion(), function (latest, installed) {
+              if (latest && compareVersions(latest, installed) > 0) {
+                settingsMsg('New release available: v' + latest + ' (installed: v' + installed + ')');
+              } else {
+                settingsMsg('FireClock is up to date (v' + installed + (latest ? ', latest v' + latest : '') + ')!');
+              }
+              setTimeout(function () { updateBtn.disabled = false; }, 3000);
+            });
+            return;
           }
           setTimeout(function () { updateBtn.disabled = false; }, 3000);
         }, 100);
