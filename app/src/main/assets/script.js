@@ -28,7 +28,7 @@
   var MAX_PER_DAY = 20; // show the full daily itinerary in each column
   var UI_STYLE = 'compact'; // 'compact' (classic Double-Bezel) or 'timeline'; switch in Settings
 
-  var WEB_APP_VERSION = '1.0.9';  // fallback when not running in the native APK
+  var WEB_APP_VERSION = '1.1.0';  // fallback when not running in the native APK
 
   function getAppVersion() {
     if (window.FireClockBridge && window.FireClockBridge.getAppVersion) {
@@ -115,6 +115,7 @@
   var eventsEl = document.getElementById('events');
   var milestonesEl = document.getElementById('milestones');
   var weatherEl = document.getElementById('weather');
+  var newsTrackEl = document.getElementById('news-track');
   var lastCountdownDayKey = '';
   var htmlEl = document.documentElement;
   var nextupEl = document.getElementById('nextup');
@@ -281,55 +282,58 @@
     [8, 31, 'Aug 31'], [9, 28, 'Sep 28'], [10, 8, 'Oct 8'],
     [11, 14, 'Nov 14'], [11, 26, 'Nov 26'], [12, 25, 'Dec 25']
   ];
+  var activeChipIndex = 0;
+  var NEWS_REFRESH_MS = 20 * 60 * 1000;
+
+  function sortedChips() {
+    return DATE_CHIPS.map(function (c, idx) {
+      return { idx: idx, chip: c, days: daysUntil(c[0], c[1]) };
+    }).sort(function (a, b) { return a.days - b.days; });
+  }
 
   function renderCountdowns() {
     if (!milestonesEl) return;
     var key = dayKey(new Date());
-    if (key === lastCountdownDayKey) return;
+    if (key === lastCountdownDayKey && milestonesEl.querySelector('.milestone-btn')) return;
     lastCountdownDayKey = key;
 
-    var bestDays = Infinity;
-    DATE_CHIPS.forEach(function (c) { var d = daysUntil(c[0], c[1]); if (d < bestDays) bestDays = d; });
-
-    var out = '<span class="daysleft-tag">' + bestDays + ' days</span>';
-    DATE_CHIPS.forEach(function (c) {
-      var d = daysUntil(c[0], c[1]);
-      out += '<span class="chip' + (d === bestDays ? ' chip-soon' : '') + '" tabindex="0" role="button" aria-pressed="false" data-days="' + d + '">' + c[2].toUpperCase() + '</span>';
-    });
-    milestonesEl.innerHTML = out;
-  }
-
-  // Days until the soonest chip (the default before/after a selection).
-  function soonestDays() {
-    var b = Infinity;
-    DATE_CHIPS.forEach(function (c) { var d = daysUntil(c[0], c[1]); if (d < b) b = d; });
-    return b;
-  }
-
-  // Make date chips selectable (click/tap + remote D-pad + OK).
-  function activateChip(chip) {
-    var wasActive = chip.classList.contains('is-active');
-    var all = milestonesEl.querySelectorAll('.chip');
-    all.forEach(function (c) { c.classList.remove('is-active'); c.setAttribute('aria-pressed', 'false'); });
-    if (!wasActive) { chip.classList.add('is-active'); chip.setAttribute('aria-pressed', 'true'); }
-
-    // Reflect the selection in the "N days" counter.
-    var tag = milestonesEl.querySelector('.daysleft-tag');
-    if (tag) {
-      tag.textContent = (wasActive ? soonestDays() : chip.getAttribute('data-days')) + ' days';
+    var sorted = sortedChips();
+    if (!sorted.length) {
+      milestonesEl.innerHTML = '';
+      return;
     }
+    if (activeChipIndex >= sorted.length) activeChipIndex = 0;
+    var current = sorted[activeChipIndex];
+    var c = current.chip;
+    var d = current.days;
+    milestonesEl.innerHTML =
+      '<button type="button" class="milestone-btn" tabindex="0" aria-label="Important date, click to change">' +
+        '<span class="ms-num">' + d + '</span>' +
+        '<span class="ms-label">days · ' + escH(c[2]) + '</span>' +
+        '<span class="ms-hint" aria-hidden="true">▾</span>' +
+      '</button>';
   }
-  function closeChip(ev) {
-    var t = ev.target && ev.target.closest ? ev.target.closest('.chip') : null;
-    if (!t) return;
-    if (ev.type === 'keydown' && !(ev.key === 'Enter' || ev.key === ' ' || ev.key === 'OK')) return;
-    if (ev.type === 'keydown') ev.preventDefault();
-    activateChip(t);
+
+  function cycleMilestone() {
+    var sorted = sortedChips();
+    if (!sorted.length) return;
+    activeChipIndex = (activeChipIndex + 1) % sorted.length;
+    lastCountdownDayKey = '';
+    renderCountdowns();
   }
+
   function setupChips() {
     if (!milestonesEl) return;
-    milestonesEl.addEventListener('click', closeChip);
-    milestonesEl.addEventListener('keydown', closeChip);
+    milestonesEl.addEventListener('click', function (ev) {
+      if (ev.target.closest('.milestone-btn')) cycleMilestone();
+    });
+    milestonesEl.addEventListener('keydown', function (ev) {
+      if (!(ev.key === 'Enter' || ev.key === ' ' || ev.key === 'OK')) return;
+      if (ev.target.closest('.milestone-btn')) {
+        ev.preventDefault();
+        cycleMilestone();
+      }
+    });
   }
 
   // Time-of-day ambience (ideas 2, 5, 6, 12): warm evening, deep sleep dim,
@@ -434,6 +438,27 @@
     } catch (e) {}
   }
 
+  function rainStats(hly) {
+    var stats = { now: 0, max: 0, timeLabel: '' };
+    if (!hly || !hly.time || !hly.precipitation_probability) return stats;
+    var rainNow = Date.now();
+    for (var i = 0; i < hly.time.length; i++) {
+      var hrMs = new Date(hly.time[i]).getTime();
+      var prob = hly.precipitation_probability[i] || 0;
+      if (Math.abs(hrMs - rainNow) < 50 * 60000) stats.now = Math.max(stats.now, prob);
+      if (hrMs - rainNow > 6 * 3600000) break;
+      if (hrMs >= rainNow) {
+        if (prob >= 35 && !stats.timeLabel) {
+          var rt = new Date(hrMs);
+          stats.timeLabel = (rt.getHours() % 12 || 12) + ' ' + (rt.getHours() < 12 ? 'AM' : 'PM');
+        }
+        if (prob > stats.max) stats.max = prob;
+      }
+    }
+    if (!stats.now && stats.max) stats.now = stats.max;
+    return stats;
+  }
+
   function renderWeatherData(d, fromCache) {
     if (!weatherEl || !d) return false;
     var cur = d.current || {};
@@ -447,46 +472,32 @@
 
     var t = Math.round(cur.temperature_2m);
     var code = cur.weather_code;
-    var desc = WMO[code] || '';
-    var icon = EMOJI[code] || '';
+    var desc = WMO[code] || '—';
+    var icon = EMOJI[code] || '🌡️';
     var hi = daily.temperature_2m_max ? Math.round(daily.temperature_2m_max[0]) : '–';
     var lo = daily.temperature_2m_min ? Math.round(daily.temperature_2m_min[0]) : '–';
-    var fe = (cur.apparent_temperature != null) ? Math.round(cur.apparent_temperature) + '°' : '';
+    var fe = (cur.apparent_temperature != null) ? Math.round(cur.apparent_temperature) : null;
+    var rain = rainStats(d.hourly || {});
+    var rainPct = Math.round(rain.now || rain.max || 0);
+    var rainClass = 'w-rain';
+    if (rainPct >= 50 || rain.timeLabel) rainClass += ' w-rain-alert';
+
+    RAINY = !!(code >= 51) || rainPct >= 50;
 
     weatherEl.innerHTML =
-      (icon ? '<span class="w-icon">' + icon + '</span>' : '') +
-      '<span class="w-temp">' + t + '°</span>' +
-      (desc ? '<span class="w-sep">|</span><span class="w-mid"><span class="w-desc">' + desc + '</span>' +
-        (fe ? '<span class="w-fl">Feels Like ' + fe + '</span>' : '') + '</span>' : '') +
-      '<span class="w-sep">|</span><span class="w-hilo">H ' + hi + '° L ' + lo + '°</span>' +
-      (fromCache ? '<span class="w-cache">cached</span>' : '');
-
-    var maxRainProb = 0;
-    var rainTimeLabel = '';
-    var hly = d.hourly || {};
-    if (hly.precipitation_probability && hly.time) {
-      var rainNow = Date.now();
-      for (var i = 0; i < hly.time.length; i++) {
-        var hrMs = new Date(hly.time[i]).getTime();
-        if (hrMs - rainNow > 6 * 3600000) break;
-        var prob = hly.precipitation_probability[i] || 0;
-        if (hrMs >= rainNow && prob >= 35 && !rainTimeLabel) {
-          var rt = new Date(hrMs);
-          var rth = rt.getHours() % 12 || 12;
-          var rtap = rt.getHours() < 12 ? 'AM' : 'PM';
-          rainTimeLabel = rth + ' ' + rtap;
-        }
-        if (hrMs >= rainNow && prob > maxRainProb) {
-          maxRainProb = prob;
-        }
-      }
-    }
-    RAINY = !!(code >= 51) || maxRainProb >= 50;
-    if (maxRainProb >= 35 && rainTimeLabel) {
-      weatherEl.innerHTML += ' <span class="w-rain w-rain-alert">🌧️ Rain ~' + rainTimeLabel + ' (' + Math.round(maxRainProb) + '%)</span>';
-    } else if (maxRainProb > 4) {
-      weatherEl.innerHTML += ' <span class="w-rain">☂ ' + Math.round(maxRainProb) + '%</span>';
-    }
+      '<div class="weather-card' + (fromCache ? ' is-cached' : '') + '">' +
+        '<div class="w-row w-row-top">' +
+          '<span class="w-icon">' + icon + '</span>' +
+          '<span class="w-temp">' + t + '°</span>' +
+          '<span class="w-desc">' + desc + '</span>' +
+        '</div>' +
+        '<div class="w-row w-row-bottom">' +
+          (fe != null ? '<span class="w-fl">Feels ' + fe + '°</span>' : '') +
+          '<span class="w-hilo">H ' + hi + '° · L ' + lo + '°</span>' +
+          '<span class="' + rainClass + '">☂ ' + rainPct + '%' +
+            (rain.timeLabel && rainPct >= 35 ? ' ~' + rain.timeLabel : '') + '</span>' +
+        '</div>' +
+      '</div>';
     return true;
   }
 
@@ -514,6 +525,30 @@
         weatherRetryTimer = setTimeout(function () { fetchWeather(true); }, 10000);
       }
       showWeatherUnavailable();
+    }
+  }
+
+  async function fetchNews() {
+    if (!newsTrackEl) return;
+    try {
+      var r = await fetch('/news', { cache: 'no-store' });
+      if (!r.ok) throw new Error('news_http');
+      var text = await r.text();
+      var doc = new DOMParser().parseFromString(text, 'text/xml');
+      var titles = [];
+      doc.querySelectorAll('item title').forEach(function (node) {
+        var title = (node.textContent || '').trim();
+        if (title) titles.push(title);
+      });
+      if (!titles.length) throw new Error('news_empty');
+      var items = titles.slice(0, 14).map(function (title) {
+        return '<span class="news-item">' + escH(title) + '</span>';
+      }).join('<span class="news-dot"> · </span>');
+      newsTrackEl.innerHTML = items + '<span class="news-dot"> · </span>' + items;
+      newsTrackEl.classList.remove('is-static');
+    } catch (e) {
+      newsTrackEl.textContent = 'News headlines unavailable';
+      newsTrackEl.classList.add('is-static');
     }
   }
 
@@ -887,7 +922,11 @@
     function applyConfig(u) {
       if (!u) return;
       var todayStr = dayKey(new Date());
-      if (Array.isArray(u.chips) && u.chips.length) DATE_CHIPS = u.chips.slice();
+      if (Array.isArray(u.chips) && u.chips.length) {
+        DATE_CHIPS = u.chips.slice();
+        activeChipIndex = 0;
+        lastCountdownDayKey = '';
+      }
       if (u.specialDays) {
         for (var k in u.specialDays) {
           if (k >= todayStr) SPECIAL_DAYS[k] = u.specialDays[k];
@@ -1556,11 +1595,13 @@
     loadUserConfig();
     setTimeout(fitScreen, 300);           // re-fit after fonts/layout settle
     fetchWeather();
+    fetchNews();
     refreshCalendar();
     updateNightMode();
     calTimer = setInterval(refreshCalendar, REFRESH_MS);
     setInterval(function () { updateNowMark(); updateNextUp(); updateNightMode(); }, 60 * 1000);
     setInterval(fetchWeather, 30 * 60 * 1000);
+    setInterval(fetchNews, NEWS_REFRESH_MS);
   }
 
   window.addEventListener('beforeunload', function () {

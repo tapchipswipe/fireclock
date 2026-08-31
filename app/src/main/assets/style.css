@@ -315,20 +315,58 @@ body::before {
   color: var(--fg-3);
 }
 
-/* ---------- Weather (bottom-right, subtle) ---------- */
+/* ---------- Weather card (bottom-right) ---------- */
 .weather {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: clamp(3px, 0.5vw, 8px);
+  align-items: stretch;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.weather-card {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2px, 0.4vh, 6px);
+  padding: clamp(6px, 0.9vh, 12px) clamp(10px, 1.2vw, 18px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: clamp(10px, 1.4vh, 18px);
+  background: linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+  max-width: min(46vw, 560px);
+}
+.weather-card.is-cached { opacity: 0.85; }
+.w-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: clamp(6px, 0.8vw, 12px); }
+.w-row-top { align-items: center; }
+.w-row-bottom { padding-left: clamp(2px, 0.3vw, 4px); }
+.weather .w-temp {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+  font-size: clamp(22px, 3.2vh, 42px);
+  color: var(--fg-1);
+  font-weight: 300;
+  line-height: 1;
+}
+.weather .w-desc {
+  font-family: var(--font-display);
+  font-size: clamp(12px, 1.6vh, 20px);
+  color: var(--fg-2);
+  letter-spacing: 0.02em;
+}
+.weather .w-hilo, .weather .w-fl {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(11px, 1.45vh, 18px);
   color: var(--fg-3);
 }
-.w-mid { display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
-.weather .w-temp { font-size: clamp(20px, 3vh, 40px); color: var(--fg-1); font-weight: 300; }
-.weather .w-desc { font-size: clamp(12px, 1.7vh, 22px); color: var(--fg-2); }
-.weather .w-hilo { font-size: clamp(11px, 1.5vh, 20px); color: var(--fg-3); }
+.weather .w-rain {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(11px, 1.45vh, 18px);
+  color: var(--fg-2);
+  padding: 1px clamp(6px, 0.7vw, 10px);
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+}
 
 /* ---------- Time-of-day ambience (ideas 2, 5, 6) ---------- */
 html[data-theme="evening"] {
@@ -399,7 +437,51 @@ html[data-theme="sleep"] .clock .time {
   text-transform: uppercase;
 }
 
-/* ---------- Bottom watch stripe: milestone dates + weather ---------- */
+/* ---------- News ticker ---------- */
+.newsticker {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.2vw, 18px);
+  margin-top: clamp(8px, 1vh, 14px);
+  padding: clamp(5px, 0.7vh, 9px) clamp(10px, 1.2vw, 16px);
+  border: 1px solid var(--hair);
+  border-radius: clamp(10px, 1.2vh, 16px);
+  background: rgba(255,255,255,0.03);
+  overflow: hidden;
+}
+.news-label {
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(10px, 1.3vh, 16px);
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+.news-viewport {
+  flex: 1 1 auto;
+  overflow: hidden;
+  min-width: 0;
+  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+}
+.news-track {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  white-space: nowrap;
+  animation: news-scroll 80s linear infinite;
+  font-family: var(--font-display);
+  font-size: clamp(12px, 1.55vh, 20px);
+  color: var(--fg-2);
+}
+.news-track.is-static { animation: none; }
+.news-item { padding-right: 0; }
+.news-dot { color: var(--fg-3); padding: 0 clamp(8px, 1vw, 14px); }
+@keyframes news-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ---------- Bottom watch stripe: milestone date + weather ---------- */
 .watchbar {
   display: flex;
   align-items: center;
@@ -411,9 +493,44 @@ html[data-theme="sleep"] .clock .time {
 }
 .milestones {
   display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.milestone-btn {
+  display: inline-flex;
   align-items: baseline;
-  flex-wrap: nowrap;
-  gap: clamp(14px, 2.4vw, 40px);
+  gap: clamp(6px, 0.7vw, 10px);
+  padding: clamp(4px, 0.5vh, 8px) clamp(10px, 1.1vw, 16px);
+  border: 1px solid rgba(255,176,0,0.28);
+  border-radius: 999px;
+  background: rgba(255,176,0,0.06);
+  color: var(--fg-1);
+  cursor: pointer;
+  font: inherit;
+}
+.milestone-btn:hover, .milestone-btn:focus, .milestone-btn:focus-visible {
+  outline: none;
+  border-color: rgba(255,176,0,0.55);
+  box-shadow: 0 0 0 2px rgba(255,176,0,0.18);
+}
+.milestone-btn .ms-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(20px, 2.8vh, 36px);
+  font-weight: 400;
+  color: var(--fg-1);
+}
+.milestone-btn .ms-label {
+  font-family: var(--font-display);
+  font-size: clamp(11px, 1.5vh, 18px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.milestone-btn .ms-hint {
+  font-size: clamp(10px, 1.2vh, 14px);
+  color: var(--fg-3);
+  margin-left: 2px;
 }
 .ms-item {
   display: inline-flex;

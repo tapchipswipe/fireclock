@@ -42,6 +42,8 @@ class MainActivity : Activity() {
         private const val DEFAULT_WEATHER_LAT = 42.99
         private const val DEFAULT_WEATHER_LON = -71.48
 
+        private const val NEWS_RSS_URL = "https://feeds.npr.org/1001/rss.xml"
+
         private fun buildWeatherUrl(lat: Double, lon: Double): String {
             return "https://api.open-meteo.com/v1/forecast" +
                 "?latitude=$lat&longitude=$lon" +
@@ -230,6 +232,7 @@ class MainActivity : Activity() {
         val cleanPath = path.trimEnd('/')
         return when {
             cleanPath == "/weather" -> fetchWeather(uri)
+            cleanPath == "/news" -> fetchNews()
             cleanPath.startsWith("/cal/") -> {
                 val idx = cleanPath.removePrefix("/cal/").toIntOrNull()
                 if (idx != null && CAL_PROXIES.containsKey(idx)) {
@@ -266,6 +269,27 @@ class MainActivity : Activity() {
         } catch (e: Exception) {
             Log.w(TAG, "Weather fetch failed: ${e.message}")
             response(502, "application/json", "Bad Gateway", ByteArrayInputStream("{}".toByteArray(Charsets.UTF_8)))
+        }
+    }
+
+    private fun fetchNews(): WebResourceResponse {
+        return try {
+            val conn = URL(NEWS_RSS_URL).openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("Host", "feeds.npr.org")
+            conn.setRequestProperty("Accept", "application/rss+xml, application/xml, text/xml, */*")
+            conn.setRequestProperty("User-Agent", "FireClock-App")
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            val code = conn.responseCode
+            val stream = if (code in 200..299) conn.inputStream else (conn.errorStream ?: ByteArrayInputStream(ByteArray(0)))
+            val bytes = stream.use { it.readBytes() }
+            Log.i(TAG, "News fetch code=$code bytes=${bytes.size}")
+            val status = if (code in 200..299) 200 else code
+            response(status, "application/rss+xml", if (status == 200) "OK" else "Error", ByteArrayInputStream(bytes))
+        } catch (e: Exception) {
+            Log.w(TAG, "News fetch failed: ${e.message}")
+            response(502, "application/xml", "Bad Gateway", ByteArrayInputStream("<rss/>".toByteArray(Charsets.UTF_8)))
         }
     }
 
