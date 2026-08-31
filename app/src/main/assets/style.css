@@ -332,6 +332,24 @@ body::before {
   background: linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
   max-width: min(46vw, 560px);
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.weather-clickable {
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+}
+.weather-clickable:focus, .weather-clickable:focus-visible,
+.weather-card:focus, .weather-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255,176,0,0.35);
 }
 .weather-card.is-cached { opacity: 0.85; }
 .w-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: clamp(6px, 0.8vw, 12px); }
@@ -448,6 +466,12 @@ html[data-theme="sleep"] .clock .time {
   border-radius: clamp(10px, 1.2vh, 16px);
   background: rgba(255,255,255,0.03);
   overflow: hidden;
+  cursor: pointer;
+}
+.newsticker:hover, .newsticker:focus, .newsticker:focus-visible {
+  border-color: rgba(255,176,0,0.35);
+  box-shadow: 0 0 0 2px rgba(255,176,0,0.15);
+  outline: none;
 }
 .news-label {
   flex: 0 0 auto;
@@ -474,6 +498,7 @@ html[data-theme="sleep"] .clock .time {
   color: var(--fg-2);
 }
 .news-track.is-static { animation: none; }
+.news-track.is-paused { animation-play-state: paused; }
 .news-item { padding-right: 0; }
 .news-dot { color: var(--fg-3); padding: 0 clamp(8px, 1vw, 14px); }
 @keyframes news-scroll {
@@ -817,6 +842,109 @@ html.screen-save .noise { opacity: 0 !important; }
 .settings button { padding: 9px 18px; border-radius: 10px; border: 1px solid var(--hair); background: rgba(255,255,255,0.08); color: var(--fg-1); cursor: pointer; font-weight: 550; font-size: 15px; }
 .settings button.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 650; }
 #settingsMsg { margin-top: 6px; min-height: 20px; font-size: 14px; color: var(--accent); font-weight: 500; }
+
+/* ---- Full-screen popups (news, weather, date picker) ---- */
+.fc-popup {
+  position: fixed; inset: 0; z-index: 80;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.82);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  padding: clamp(12px, 2vh, 28px);
+}
+.fc-popup[hidden] { display: none; }
+.fc-popup-card {
+  width: min(820px, 96vw); max-height: 88vh; overflow: hidden;
+  display: flex; flex-direction: column;
+  background: var(--ink-1); border: 1px solid rgba(255,255,255,0.18);
+  border-radius: clamp(18px, 3vh, 32px);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+  color: var(--fg-1); font-family: var(--font-display);
+}
+.fc-popup-head {
+  padding: clamp(16px, 2.4vh, 24px) clamp(18px, 2.6vh, 28px) clamp(8px, 1vh, 12px);
+  font-size: clamp(20px, 3vh, 34px); font-weight: 700; letter-spacing: -0.01em;
+  color: var(--accent);
+}
+.fc-popup-body {
+  padding: 0 clamp(18px, 2.6vh, 28px);
+  overflow-y: auto; flex: 1 1 auto;
+}
+.fc-popup-actions {
+  padding: clamp(12px, 1.8vh, 20px) clamp(18px, 2.6vh, 28px);
+  display: flex; justify-content: flex-end;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.fc-popup-close {
+  padding: 10px 22px; border-radius: 10px;
+  border: 1px solid var(--hair); background: rgba(255,255,255,0.08);
+  color: var(--fg-1); cursor: pointer; font-weight: 600; font-size: 15px;
+}
+.fc-popup-close:focus, .fc-popup-close:focus-visible {
+  outline: none; box-shadow: 0 0 0 2px rgba(255,176,0,0.35);
+}
+.popup-empty { color: var(--fg-3); font-size: clamp(14px, 2vh, 22px); padding: 12px 0 24px; }
+
+.picker-list { display: flex; flex-direction: column; gap: 10px; padding: 8px 0 20px; }
+.picker-item {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  width: 100%; padding: 14px 18px; border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
+  color: var(--fg-1); cursor: pointer; font: inherit; text-align: left;
+}
+.picker-item.is-active {
+  border-color: rgba(255,176,0,0.5); background: rgba(255,176,0,0.1);
+}
+.picker-item:focus, .picker-item:focus-visible {
+  outline: none; box-shadow: 0 0 0 2px rgba(255,176,0,0.35);
+}
+.picker-days {
+  font-family: var(--font-mono); font-size: clamp(18px, 2.6vh, 30px);
+  color: var(--fg-1); min-width: 5ch;
+}
+.picker-label {
+  font-size: clamp(13px, 1.8vh, 22px); letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--fg-2);
+}
+
+.news-popup-list { list-style: none; margin: 0; padding: 0 0 20px; }
+.news-popup-item {
+  padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.news-popup-item:last-child { border-bottom: 0; }
+.news-popup-title {
+  font-size: clamp(15px, 2.1vh, 26px); font-weight: 600; color: var(--fg-1);
+  line-height: 1.35; margin-bottom: 6px;
+}
+.news-popup-desc {
+  font-size: clamp(13px, 1.7vh, 20px); color: var(--fg-2); line-height: 1.45;
+}
+
+.weather-popup { padding: 8px 0 20px; }
+.weather-popup-hero {
+  display: flex; align-items: center; gap: clamp(12px, 1.5vw, 20px);
+  margin-bottom: 18px;
+}
+.weather-popup-icon { font-size: clamp(42px, 6vh, 72px); line-height: 1; }
+.weather-popup-temp {
+  font-family: var(--font-mono); font-size: clamp(48px, 7vh, 88px);
+  font-weight: 300; line-height: 1;
+}
+.weather-popup-desc { font-size: clamp(18px, 2.6vh, 32px); color: var(--fg-2); }
+.weather-popup-meta {
+  display: flex; flex-direction: column; gap: 8px;
+  font-family: var(--font-mono); font-size: clamp(13px, 1.8vh, 22px);
+  color: var(--fg-2); margin-bottom: 18px;
+}
+.weather-popup-hourly h4 {
+  font-size: clamp(12px, 1.6vh, 18px); color: var(--accent);
+  text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 10px;
+}
+.weather-popup-hourly ul { list-style: none; margin: 0; padding: 0; }
+.weather-popup-hourly li {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-family: var(--font-mono); font-size: clamp(13px, 1.7vh, 20px);
+}
 
 /* Fire TV remote focus rings */
 .gear:focus,
