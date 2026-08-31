@@ -64,6 +64,17 @@
     return String(v);
   }
 
+  // Keep only EC 243 section A; drop other sections (e.g. EC 243 (B), EC243B-B).
+  function shouldKeepFeedEvent(title) {
+    var t = String(title);
+    if (!/ec\s*243|ec243b/i.test(t)) return true;
+    if (/ec\s*243\s*[-–]\s*A\b/i.test(t)) return true;
+    if (/ec\s*243\s*\(\s*A\s*\)/i.test(t)) return true;
+    if (/ec243b[-\s]?A\b/i.test(t)) return true;
+    if (/section\s+A\b/i.test(t)) return true;
+    return false;
+  }
+
   /* Merge STATIC_SCHEDULE with feed events: skip past/out-of-window,
      dedupe against feeds by minute|title, re-sort by start. */
   var USER_EVENTS = {}; // extra events from /user.json (editable on the NAS)
@@ -101,6 +112,7 @@
         // Dedupe so an identical feed copy doesn't appear twice.
         var key = Math.floor(startMs / 60000) + '|' + String(entry[1]);
         if (seen[key]) return;
+        if (!shouldKeepFeedEvent(String(entry[1]))) return;
         seen[key] = true;
         events.push({ startMs: startMs, isAllDay: false, title: String(entry[1]) });
       });
@@ -872,6 +884,7 @@
 
         var title = stringify(ve.getFirstPropertyValue('summary'));
         if (!!start.isDate && /(football|camp)/i.test(title)) return;
+        if (!shouldKeepFeedEvent(title)) return;
 
         events.push({
           startMs: startMs,
