@@ -5,9 +5,9 @@ Last updated: 2026-08-30
 
 ## 1. WHERE WE ARE (verified current state)
 
-- **Self-Contained Standalone Fire TV App (v1.0.1)**:
+- **Self-Contained Standalone Fire TV App (v1.0.9)**:
   - Completely eliminates dependency on TrueNAS and Fully Kiosk Browser.
-  - `EmbeddedServer.kt` (NanoHTTPD) runs on `http://127.0.0.1:8080/`, serving HTML/CSS/JS directly from packaged assets.
+  - WebView request interception in `MainActivity.kt` serves HTML/CSS/JS from packaged assets and proxies feeds/weather.
   - Native proxying for Open-Meteo weather (`/weather`) and all 4 `.ics` calendar feeds (`/cal/0..3`).
   - Native JSON storage for `/user.json` and `/api/` (GET/PUT) in app internal storage (`filesDir/user.json`), with default fallback to `fireclock_user.json`.
   - Continuous screen-on (`FLAG_KEEP_SCREEN_ON`) + sticky immersive fullscreen for 1080p wall-clock display.

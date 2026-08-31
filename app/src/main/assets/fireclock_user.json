@@ -36,5 +36,10 @@
     ]
   ],
   "days": 2,
-  "style": "compact"
+  "style": "compact",
+  "weather": {
+    "lat": 42.99,
+    "lon": -71.48,
+    "label": "Manchester, NH"
+  }
 }

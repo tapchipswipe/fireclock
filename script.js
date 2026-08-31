@@ -132,7 +132,9 @@
   ];
 
   // Weather location (default Manchester, NH) + WMO condition text.
-  var WEATHER_LOC = { lat: 42.99, lon: -71.48 };  // Manchester, NH 03102
+  var WEATHER_LOC = { lat: 42.99, lon: -71.48, label: 'Manchester, NH' };
+  var WEATHER_CACHE_KEY = 'fireclock_weather_cache';
+  var weatherRetryTimer = null;
   var WMO = {
     0: 'Clear', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Overcast',
     45: 'Fog', 48: 'Fog', 51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle',
@@ -404,59 +406,106 @@
   }, 20 * 1000);
 
   // Weather (idea 7) — free Open-Meteo, no key; fails silent like feeds.
-  async function fetchWeather() {
-    if (!weatherEl) return;
-    try {
-      var u = '/weather';   // proxied same-origin via nginx (TV-safe)
-      var r = await fetch(u);
-      if (!r.ok) return;
-      var d = await r.json();
-      var cur = d.current || {};
-      var daily = d.daily || {};
-      if (daily.sunrise && daily.sunset && daily.sunrise[0] && daily.sunset[0]) {
-        SUN.rise = new Date(daily.sunrise[0]);   // real local sunrise/sunset
-        SUN.set = new Date(daily.sunset[0]);
-      }
-      var t = Math.round(cur.temperature_2m);
-      var desc = WMO[cur.weather_code] || '';
-      var hi = daily.temperature_2m_max ? Math.round(daily.temperature_2m_max[0]) : '–';
-      var lo = daily.temperature_2m_min ? Math.round(daily.temperature_2m_min[0]) : '–';
-      var fe = (cur.apparent_temperature != null) ? Math.round(cur.apparent_temperature) + '°' : '';
-      weatherEl.innerHTML =
-        '<span class="w-temp">' + t + '°</span>' +
-        (desc ? '<span class="w-sep">|</span><span class="w-mid"><span class="w-desc">' + desc + '</span>' +
-          (fe ? '<span class="w-fl">Feels Like ' + fe + '</span>' : '') + '</span>' : '') +
-        '<span class="w-sep">|</span><span class="w-hilo">H ' + hi + '° L ' + lo + '°</span>';
+  function weatherUrl() {
+    return '/weather?lat=' + encodeURIComponent(WEATHER_LOC.lat) +
+      '&lon=' + encodeURIComponent(WEATHER_LOC.lon);
+  }
 
-      // Chance of rain in the next 6 hours with expected arrival time
-      var maxRainProb = 0;
-      var rainTimeLabel = '';
-      var hly = d.hourly || {};
-      if (hly.precipitation_probability && hly.time) {
-        var rainNow = Date.now();
-        for (var i = 0; i < hly.time.length; i++) {
-          var hrMs = new Date(hly.time[i]).getTime();
-          if (hrMs - rainNow > 6 * 3600000) break;
-          var prob = hly.precipitation_probability[i] || 0;
-          if (hrMs >= rainNow && prob >= 35 && !rainTimeLabel) {
-            var rt = new Date(hrMs);
-            var rth = rt.getHours() % 12 || 12;
-            var rtap = rt.getHours() < 12 ? 'AM' : 'PM';
-            rainTimeLabel = rth + ' ' + rtap;
-          }
-          if (hrMs >= rainNow && prob > maxRainProb) {
-            maxRainProb = prob;
-          }
+  function readWeatherCache() {
+    try {
+      var raw = localStorage.getItem(WEATHER_CACHE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeWeatherCache(data) {
+    try {
+      localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), data: data }));
+    } catch (e) {}
+  }
+
+  function renderWeatherData(d, fromCache) {
+    if (!weatherEl || !d) return false;
+    var cur = d.current || {};
+    if (cur.temperature_2m == null || isNaN(cur.temperature_2m)) return false;
+
+    var daily = d.daily || {};
+    if (daily.sunrise && daily.sunset && daily.sunrise[0] && daily.sunset[0]) {
+      SUN.rise = new Date(daily.sunrise[0]);
+      SUN.set = new Date(daily.sunset[0]);
+    }
+
+    var t = Math.round(cur.temperature_2m);
+    var code = cur.weather_code;
+    var desc = WMO[code] || '';
+    var icon = EMOJI[code] || '';
+    var hi = daily.temperature_2m_max ? Math.round(daily.temperature_2m_max[0]) : '–';
+    var lo = daily.temperature_2m_min ? Math.round(daily.temperature_2m_min[0]) : '–';
+    var fe = (cur.apparent_temperature != null) ? Math.round(cur.apparent_temperature) + '°' : '';
+
+    weatherEl.innerHTML =
+      (icon ? '<span class="w-icon">' + icon + '</span>' : '') +
+      '<span class="w-temp">' + t + '°</span>' +
+      (desc ? '<span class="w-sep">|</span><span class="w-mid"><span class="w-desc">' + desc + '</span>' +
+        (fe ? '<span class="w-fl">Feels Like ' + fe + '</span>' : '') + '</span>' : '') +
+      '<span class="w-sep">|</span><span class="w-hilo">H ' + hi + '° L ' + lo + '°</span>' +
+      (fromCache ? '<span class="w-cache">cached</span>' : '');
+
+    var maxRainProb = 0;
+    var rainTimeLabel = '';
+    var hly = d.hourly || {};
+    if (hly.precipitation_probability && hly.time) {
+      var rainNow = Date.now();
+      for (var i = 0; i < hly.time.length; i++) {
+        var hrMs = new Date(hly.time[i]).getTime();
+        if (hrMs - rainNow > 6 * 3600000) break;
+        var prob = hly.precipitation_probability[i] || 0;
+        if (hrMs >= rainNow && prob >= 35 && !rainTimeLabel) {
+          var rt = new Date(hrMs);
+          var rth = rt.getHours() % 12 || 12;
+          var rtap = rt.getHours() < 12 ? 'AM' : 'PM';
+          rainTimeLabel = rth + ' ' + rtap;
+        }
+        if (hrMs >= rainNow && prob > maxRainProb) {
+          maxRainProb = prob;
         }
       }
-      RAINY = !!(cur.weather_code >= 51) || maxRainProb >= 50;
-      if (maxRainProb >= 35 && rainTimeLabel) {
-        weatherEl.innerHTML += ' <span class="w-rain w-rain-alert">🌧️ Rain ~' + rainTimeLabel + ' (' + Math.round(maxRainProb) + '%)</span>';
-      } else if (maxRainProb > 4) {
-        weatherEl.innerHTML += ' <span class="w-rain">☂ ' + Math.round(maxRainProb) + '%</span>';
+    }
+    RAINY = !!(code >= 51) || maxRainProb >= 50;
+    if (maxRainProb >= 35 && rainTimeLabel) {
+      weatherEl.innerHTML += ' <span class="w-rain w-rain-alert">🌧️ Rain ~' + rainTimeLabel + ' (' + Math.round(maxRainProb) + '%)</span>';
+    } else if (maxRainProb > 4) {
+      weatherEl.innerHTML += ' <span class="w-rain">☂ ' + Math.round(maxRainProb) + '%</span>';
+    }
+    return true;
+  }
+
+  function showWeatherUnavailable() {
+    if (!weatherEl) return;
+    var cached = readWeatherCache();
+    if (cached && cached.data && renderWeatherData(cached.data, true)) return;
+    weatherEl.innerHTML = '<span class="w-unavail">Weather unavailable</span>';
+  }
+
+  async function fetchWeather(isRetry) {
+    if (!weatherEl) return;
+    try {
+      var r = await fetch(weatherUrl());
+      if (!r.ok) throw new Error('weather_http_' + r.status);
+      var d = await r.json();
+      if (!renderWeatherData(d, false)) throw new Error('weather_invalid_payload');
+      writeWeatherCache(d);
+      if (weatherRetryTimer) {
+        clearTimeout(weatherRetryTimer);
+        weatherRetryTimer = null;
       }
     } catch (e) {
-      if (weatherEl) weatherEl.textContent = '';
+      if (!isRetry) {
+        weatherRetryTimer = setTimeout(function () { fetchWeather(true); }, 10000);
+      }
+      showWeatherUnavailable();
     }
   }
 
@@ -845,8 +894,16 @@
       }
       if (u.days && !isNaN(+u.days)) DAYS_AHEAD = Math.max(1, Math.round(+u.days) - 1);
       if (u.style === 'timeline' || u.style === 'compact') UI_STYLE = u.style;
+      if (u.weather && u.weather.lat != null && u.weather.lon != null) {
+        WEATHER_LOC = {
+          lat: +u.weather.lat,
+          lon: +u.weather.lon,
+          label: u.weather.label || WEATHER_LOC.label || ''
+        };
+      }
       renderCountdowns();
       refreshCalendar();
+      fetchWeather();
     }
     if (window.FireClockBridge && window.FireClockBridge.getUserConfig) {
       try {
@@ -888,7 +945,7 @@
           return JSON.parse(window.FireClockBridge.getAutoStartConfig());
         } catch (e) {}
       }
-      return { enabled: true, days: 'all', window: 'before_9am' };
+      return { enabled: true, days: 'all', window: 'anytime', alarmEnabled: true, alarmHour: 6, alarmMinute: 50 };
     }
 
     fetchConfig().then(function (cfg) {
@@ -912,7 +969,7 @@
 
       var hd = document.createElement('div');
       hd.className = 'settings-head';
-      hd.textContent = 'FireClock Settings (v1.0.8)';
+      hd.textContent = 'FireClock Settings (v1.0.9)';
       card.appendChild(hd);
 
       // --- Quick Actions Bar at Top ---
@@ -940,11 +997,11 @@
       msg.id = 'settingsMsg';
       card.appendChild(msg);
 
-      // --- Auto-Start on TV Power (Boot/Wake) Section ---
+      // --- Auto-Start on TV Power Section ---
       var asSec = document.createElement('section');
       asSec.className = 'settings-section';
       var asTitle = document.createElement('h3');
-      asTitle.textContent = 'Auto-Start on TV Power (Boot / Wake)';
+      asTitle.textContent = 'Auto-Start on TV Power';
       asSec.appendChild(asTitle);
 
       var asEnableRow = document.createElement('div');
@@ -1002,23 +1059,141 @@
       var asWinSel = document.createElement('select');
       asWinSel.id = 'cfgAutoStartWindow';
       [
-        { val: 'before_9am', label: 'Before 9:00 AM (Recommended)' },
+        { val: 'anytime', label: 'Anytime (Always on Boot)' },
+        { val: 'before_9am', label: 'Before 9:00 AM' },
         { val: 'morning_6_9', label: 'Morning (6:00 AM – 9:00 AM)' },
         { val: 'morning_6_10', label: 'Morning (6:00 AM – 10:00 AM)' },
         { val: 'before_10am', label: 'Before 10:00 AM' },
-        { val: 'before_12pm', label: 'Before 12:00 PM (Noon)' },
-        { val: 'anytime', label: 'Anytime (Always on Boot)' }
+        { val: 'before_12pm', label: 'Before 12:00 PM (Noon)' }
       ].forEach(function (opt) {
         var o = document.createElement('option');
         o.value = opt.val;
         o.textContent = opt.label;
-        if ((autoStart.window || 'before_9am') === opt.val) o.selected = true;
+        if ((autoStart.window || 'anytime') === opt.val) o.selected = true;
         asWinSel.appendChild(o);
       });
       asWinRow.appendChild(asWinSpan);
       asWinRow.appendChild(asWinSel);
       asSec.appendChild(asWinRow);
+
+      var asAlarmEnableRow = document.createElement('div');
+      asAlarmEnableRow.className = 'addrow';
+      asAlarmEnableRow.style.marginTop = '8px';
+      var asAlarmEnableSpan = document.createElement('span');
+      asAlarmEnableSpan.textContent = 'Daily Launch Alarm:';
+      var asAlarmEnableSel = document.createElement('select');
+      asAlarmEnableSel.id = 'cfgAutoStartAlarmEnabled';
+      [
+        { val: 'true', label: 'Enabled' },
+        { val: 'false', label: 'Disabled' }
+      ].forEach(function (opt) {
+        var o = document.createElement('option');
+        o.value = opt.val;
+        o.textContent = opt.label;
+        if (String(autoStart.alarmEnabled !== false) === opt.val) o.selected = true;
+        asAlarmEnableSel.appendChild(o);
+      });
+      asAlarmEnableRow.appendChild(asAlarmEnableSpan);
+      asAlarmEnableRow.appendChild(asAlarmEnableSel);
+      asSec.appendChild(asAlarmEnableRow);
+
+      var asAlarmTimeRow = document.createElement('div');
+      asAlarmTimeRow.className = 'addrow';
+      asAlarmTimeRow.style.marginTop = '8px';
+      var asAlarmTimeSpan = document.createElement('span');
+      asAlarmTimeSpan.textContent = 'Daily Launch Time:';
+      var asAlarmHourSel = document.createElement('select');
+      asAlarmHourSel.id = 'cfgAutoStartAlarmHour';
+      for (var ah = 0; ah < 24; ah++) {
+        var hOpt = document.createElement('option');
+        hOpt.value = String(ah);
+        var h12 = ah % 12 || 12;
+        hOpt.textContent = h12 + ':00 ' + (ah < 12 ? 'AM' : 'PM');
+        if ((autoStart.alarmHour != null ? autoStart.alarmHour : 6) === ah) hOpt.selected = true;
+        asAlarmHourSel.appendChild(hOpt);
+      }
+      var asAlarmMinSel = document.createElement('select');
+      asAlarmMinSel.id = 'cfgAutoStartAlarmMinute';
+      [0, 15, 30, 45, 50].forEach(function (m) {
+        var mOpt = document.createElement('option');
+        mOpt.value = String(m);
+        mOpt.textContent = ':' + (m < 10 ? '0' : '') + m;
+        if ((autoStart.alarmMinute != null ? autoStart.alarmMinute : 50) === m) mOpt.selected = true;
+        asAlarmMinSel.appendChild(mOpt);
+      });
+      asAlarmTimeRow.appendChild(asAlarmTimeSpan);
+      asAlarmTimeRow.appendChild(asAlarmHourSel);
+      asAlarmTimeRow.appendChild(asAlarmMinSel);
+      asSec.appendChild(asAlarmTimeRow);
       card.appendChild(asSec);
+
+      // --- Weather Location Section ---
+      var wxSec = document.createElement('section');
+      wxSec.className = 'settings-section';
+      var wxTitle = document.createElement('h3');
+      wxTitle.textContent = 'Weather Location';
+      wxSec.appendChild(wxTitle);
+
+      var wx = cfg.weather || {};
+      var wxCityRow = document.createElement('div');
+      wxCityRow.className = 'addrow';
+      var wxCitySpan = document.createElement('span');
+      wxCitySpan.textContent = 'City Search:';
+      var wxCityInput = document.createElement('input');
+      wxCityInput.id = 'cfgWeatherCity';
+      wxCityInput.type = 'text';
+      wxCityInput.placeholder = 'e.g. Manchester, NH';
+      wxCityInput.value = wx.label || WEATHER_LOC.label || '';
+      var wxSearchBtn = document.createElement('button');
+      wxSearchBtn.id = 'cfgWeatherSearch';
+      wxSearchBtn.textContent = 'Search';
+      wxCityRow.appendChild(wxCitySpan);
+      wxCityRow.appendChild(wxCityInput);
+      wxCityRow.appendChild(wxSearchBtn);
+      wxSec.appendChild(wxCityRow);
+
+      var wxCoordRow = document.createElement('div');
+      wxCoordRow.className = 'addrow';
+      wxCoordRow.style.marginTop = '8px';
+      var wxLatInput = document.createElement('input');
+      wxLatInput.id = 'cfgWeatherLat';
+      wxLatInput.type = 'text';
+      wxLatInput.placeholder = 'Latitude';
+      wxLatInput.value = wx.lat != null ? wx.lat : WEATHER_LOC.lat;
+      var wxLonInput = document.createElement('input');
+      wxLonInput.id = 'cfgWeatherLon';
+      wxLonInput.type = 'text';
+      wxLonInput.placeholder = 'Longitude';
+      wxLonInput.value = wx.lon != null ? wx.lon : WEATHER_LOC.lon;
+      wxCoordRow.appendChild(wxLatInput);
+      wxCoordRow.appendChild(wxLonInput);
+      wxSec.appendChild(wxCoordRow);
+      card.appendChild(wxSec);
+
+      wxSearchBtn.onclick = function () {
+        var q = wxCityInput.value.trim();
+        if (!q) {
+          settingsMsg('Enter a city name to search.');
+          return;
+        }
+        settingsMsg('Searching weather location...');
+        fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(q) + '&count=1')
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            var hit = res && res.results && res.results[0];
+            if (!hit) {
+              settingsMsg('No location found for "' + q + '".');
+              return;
+            }
+            wxLatInput.value = hit.latitude;
+            wxLonInput.value = hit.longitude;
+            wxCityInput.value = hit.name + (hit.admin1 ? ', ' + hit.admin1 : '');
+            settingsMsg('Found: ' + wxCityInput.value);
+          })
+          .catch(function () {
+            settingsMsg('Location search failed. Check network.');
+          });
+      };
 
       // --- Display & View Section ---
       var viewSec = document.createElement('section');
@@ -1254,7 +1429,7 @@
               if (status === 'update_prompted') {
                 settingsMsg('Update downloaded! Opening installer...');
               } else if (status === 'up_to_date') {
-                settingsMsg('FireClock is up to date (v1.0.8)!');
+                settingsMsg('FireClock is up to date (v1.0.9)!');
               } else if (status === 'no_network') {
                 settingsMsg('No network connection. Check Wi-Fi.');
               } else if (status === 'download_failed') {
@@ -1270,10 +1445,10 @@
               .then(function (r) { return r.json(); })
               .then(function (rel) {
                 var tag = (rel.tag_name || '').replace(/^v/, '');
-                if (tag && tag !== '1.0.8') {
+                if (tag && tag !== '1.0.9') {
                   settingsMsg('New release available: v' + tag);
                 } else {
-                  settingsMsg('FireClock is up to date (v1.0.8)!');
+                  settingsMsg('FireClock is up to date (v1.0.9)!');
                 }
               }).catch(function () {
                 settingsMsg('Could not reach GitHub.');
@@ -1284,21 +1459,37 @@
       };
 
       saveBtn.onclick = function () {
+        var lat = parseFloat(wxLatInput.value);
+        var lon = parseFloat(wxLonInput.value);
+        if (isNaN(lat) || isNaN(lon)) {
+          settingsMsg('Weather latitude/longitude must be valid numbers.');
+          return;
+        }
+
         var payload = {
           specialDays: sd,
           events: ev,
           chips: chips,
           days: +dSel.value,
-          style: sSel.value
+          style: sSel.value,
+          weather: {
+            lat: lat,
+            lon: lon,
+            label: wxCityInput.value.trim() || (lat + ', ' + lon)
+          }
         };
         UI_STYLE = sSel.value;
         DAYS_AHEAD = Math.max(1, Math.round(+dSel.value) - 1);
         DATE_CHIPS = chips.slice();
+        WEATHER_LOC = payload.weather;
 
         var asPayload = {
           enabled: asEnableSel.value === 'true',
           days: asDaysSel.value,
-          window: asWinSel.value
+          window: asWinSel.value,
+          alarmEnabled: asAlarmEnableSel.value === 'true',
+          alarmHour: parseInt(asAlarmHourSel.value, 10),
+          alarmMinute: parseInt(asAlarmMinSel.value, 10)
         };
 
         if (window.FireClockBridge) {
@@ -1309,7 +1500,7 @@
             var ok = window.FireClockBridge.saveUserConfig(JSON.stringify(payload));
             if (ok) {
               settingsMsg('Saved successfully!');
-              setTimeout(function () { closeSettings(); loadUserConfig(); refreshCalendar(); }, 400);
+              setTimeout(function () { closeSettings(); loadUserConfig(); refreshCalendar(); fetchWeather(); }, 400);
             } else {
               settingsMsg('Save failed.');
             }
@@ -1326,7 +1517,7 @@
         }).then(function (res) {
           if (res && res.ok) {
             settingsMsg('Saved successfully!');
-            setTimeout(function () { closeSettings(); loadUserConfig(); refreshCalendar(); }, 400);
+            setTimeout(function () { closeSettings(); loadUserConfig(); refreshCalendar(); fetchWeather(); }, 400);
           } else {
             settingsMsg('Error: ' + (res && res.error || 'save failed'));
           }
