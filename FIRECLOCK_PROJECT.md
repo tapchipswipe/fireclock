@@ -141,7 +141,7 @@ curl -s -o /dev/null -w "%{http_code}" http://100.111.217.42:8081/   # → 200
 As of version **1.0.1+**, FireClock runs directly on the Fire TV as a standalone native Android TV application (`com.tapchipswipe.fireclock`), completely removing the dependency on TrueNAS or Fully Kiosk Browser.
 
 ### Architecture & Standalone Operation
-- **Embedded Server (`EmbeddedServer.kt`):** An embedded NanoHTTPD instance runs locally on `http://127.0.0.1:8080/`.
+- **WebView Interception (`MainActivity.kt`):** Loads `https://fireclock.app/index.html` and intercepts same-origin requests locally.
 - **Dynamic Asset Serving:** Serves `index.html`, `style.css`, and `script.js` directly from the APK assets, avoiding stale disk cache issues.
 - **On-Device Proxying:** Proxies `.ics` feeds (`/cal/0..3`) and Open-Meteo weather (`/weather`) directly through the Android network stack with proper timeouts, eliminating CORS restrictions.
 - **Config Storage:** `/user.json` and `/api/` (GET/PUT) read and persist custom user events/settings in internal app storage (`context.filesDir/user.json`), with fallback to packaged default `fireclock_user.json`.

@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
+import android.net.Uri
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -38,7 +39,18 @@ class MainActivity : Activity() {
             3 to "https://calendar.google.com/calendar/ical/23pchloe%40gmail.com/public/basic.ics"
         )
 
-        private const val WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=42.99&longitude=-71.48&current=temperature_2m,weather_code,apparent_temperature&hourly=precipitation_probability&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&temperature_unit=fahrenheit&precipitation_unit=inch&wind_speed_unit=mph&timezone=auto&forecast_days=1"
+        private const val DEFAULT_WEATHER_LAT = 42.99
+        private const val DEFAULT_WEATHER_LON = -71.48
+
+        private fun buildWeatherUrl(lat: Double, lon: Double): String {
+            return "https://api.open-meteo.com/v1/forecast" +
+                "?latitude=$lat&longitude=$lon" +
+                "&current=temperature_2m,weather_code,apparent_temperature" +
+                "&hourly=precipitation_probability" +
+                "&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset" +
+                "&temperature_unit=fahrenheit&precipitation_unit=inch&wind_speed_unit=mph" +
+                "&timezone=auto&forecast_days=1"
+        }
     }
 
     class WebAppInterface(private val context: Context) {
@@ -73,6 +85,16 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun getAppVersion(): String {
+            return try {
+                val pkg = context.packageManager.getPackageInfo(context.packageName, 0)
+                pkg.versionName ?: "unknown"
+            } catch (e: Exception) {
+                "unknown"
+            }
+        }
+
+        @JavascriptInterface
         fun checkForUpdates(): String {
             return try {
                 kotlinx.coroutines.runBlocking(Dispatchers.IO) {
@@ -87,14 +109,22 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun getAutoStartConfig(): String {
             return try {
-                val prefs = context.getSharedPreferences(BootReceiver.PREFS_NAME, Context.MODE_PRIVATE)
-                val enabled = prefs.getBoolean(BootReceiver.KEY_ENABLED, true)
-                val days = prefs.getString(BootReceiver.KEY_DAYS, "all") ?: "all"
-                val window = prefs.getString(BootReceiver.KEY_WINDOW, "before_9am") ?: "before_9am"
+                AutoLaunchHelper.ensureDefaultPrefs(context)
+                val prefs = context.getSharedPreferences(AutoLaunchHelper.PREFS_NAME, Context.MODE_PRIVATE)
+                val enabled = prefs.getBoolean(AutoLaunchHelper.KEY_ENABLED, true)
+                val days = prefs.getString(AutoLaunchHelper.KEY_DAYS, "all") ?: "all"
+                val window = prefs.getString(AutoLaunchHelper.KEY_WINDOW, AutoLaunchHelper.DEFAULT_WINDOW)
+                    ?: AutoLaunchHelper.DEFAULT_WINDOW
+                val alarmEnabled = prefs.getBoolean(AutoLaunchHelper.KEY_ALARM_ENABLED, true)
+                val alarmHour = prefs.getInt(AutoLaunchHelper.KEY_ALARM_HOUR, AutoLaunchHelper.DEFAULT_ALARM_HOUR)
+                val alarmMinute = prefs.getInt(AutoLaunchHelper.KEY_ALARM_MINUTE, AutoLaunchHelper.DEFAULT_ALARM_MINUTE)
                 org.json.JSONObject().apply {
                     put("enabled", enabled)
                     put("days", days)
                     put("window", window)
+                    put("alarmEnabled", alarmEnabled)
+                    put("alarmHour", alarmHour)
+                    put("alarmMinute", alarmMinute)
                 }.toString()
             } catch (e: Exception) {
                 "{}"
@@ -105,12 +135,17 @@ class MainActivity : Activity() {
         fun saveAutoStartConfig(json: String): Boolean {
             return try {
                 val obj = org.json.JSONObject(json)
-                val prefs = context.getSharedPreferences(BootReceiver.PREFS_NAME, Context.MODE_PRIVATE)
+                val prefs = context.getSharedPreferences(AutoLaunchHelper.PREFS_NAME, Context.MODE_PRIVATE)
                 prefs.edit().apply {
-                    if (obj.has("enabled")) putBoolean(BootReceiver.KEY_ENABLED, obj.getBoolean("enabled"))
-                    if (obj.has("days")) putString(BootReceiver.KEY_DAYS, obj.getString("days"))
-                    if (obj.has("window")) putString(BootReceiver.KEY_WINDOW, obj.getString("window"))
+                    if (obj.has("enabled")) putBoolean(AutoLaunchHelper.KEY_ENABLED, obj.getBoolean("enabled"))
+                    if (obj.has("days")) putString(AutoLaunchHelper.KEY_DAYS, obj.getString("days"))
+                    if (obj.has("window")) putString(AutoLaunchHelper.KEY_WINDOW, obj.getString("window"))
+                    if (obj.has("alarmEnabled")) putBoolean(AutoLaunchHelper.KEY_ALARM_ENABLED, obj.getBoolean("alarmEnabled"))
+                    if (obj.has("alarmHour")) putInt(AutoLaunchHelper.KEY_ALARM_HOUR, obj.getInt("alarmHour"))
+                    if (obj.has("alarmMinute")) putInt(AutoLaunchHelper.KEY_ALARM_MINUTE, obj.getInt("alarmMinute"))
+                    putBoolean(AutoLaunchHelper.KEY_PREFS_INITIALIZED, true)
                 }.apply()
+                AutoLaunchHelper.rescheduleDailyAlarm(context)
                 true
             } catch (e: Exception) {
                 Log.e(TAG, "saveAutoStartConfig error", e)
@@ -151,7 +186,7 @@ class MainActivity : Activity() {
                 val path = uri.path ?: "/"
 
                 if (host == APP_HOST) {
-                    return handleIntercept(path)
+                    return handleIntercept(uri)
                 }
                 return super.shouldInterceptRequest(view, request)
             }
@@ -190,10 +225,11 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun handleIntercept(path: String): WebResourceResponse {
+    private fun handleIntercept(uri: Uri): WebResourceResponse {
+        val path = uri.path ?: "/"
         val cleanPath = path.trimEnd('/')
         return when {
-            cleanPath == "/weather" -> fetchWeather()
+            cleanPath == "/weather" -> fetchWeather(uri)
             cleanPath.startsWith("/cal/") -> {
                 val idx = cleanPath.removePrefix("/cal/").toIntOrNull()
                 if (idx != null && CAL_PROXIES.containsKey(idx)) {
@@ -209,9 +245,12 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun fetchWeather(): WebResourceResponse {
+    private fun fetchWeather(uri: Uri): WebResourceResponse {
+        val lat = uri.getQueryParameter("lat")?.toDoubleOrNull() ?: DEFAULT_WEATHER_LAT
+        val lon = uri.getQueryParameter("lon")?.toDoubleOrNull() ?: DEFAULT_WEATHER_LON
+        val weatherUrl = buildWeatherUrl(lat, lon)
         return try {
-            val conn = URL(WEATHER_URL).openConnection() as HttpURLConnection
+            val conn = URL(weatherUrl).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
             conn.setRequestProperty("Host", "api.open-meteo.com")
             conn.setRequestProperty("Accept", "application/json")
@@ -221,10 +260,12 @@ class MainActivity : Activity() {
             val code = conn.responseCode
             val stream = if (code in 200..299) conn.inputStream else (conn.errorStream ?: ByteArrayInputStream(ByteArray(0)))
             val bytes = stream.use { it.readBytes() }
-            response(200, "application/json", "OK", ByteArrayInputStream(bytes))
+            Log.i(TAG, "Weather fetch lat=$lat lon=$lon code=$code bytes=${bytes.size}")
+            val status = if (code in 200..299) 200 else code
+            response(status, "application/json", if (status == 200) "OK" else "Error", ByteArrayInputStream(bytes))
         } catch (e: Exception) {
             Log.w(TAG, "Weather fetch failed: ${e.message}")
-            response(200, "application/json", "OK", ByteArrayInputStream("{}".toByteArray(Charsets.UTF_8)))
+            response(502, "application/json", "Bad Gateway", ByteArrayInputStream("{}".toByteArray(Charsets.UTF_8)))
         }
     }
 
